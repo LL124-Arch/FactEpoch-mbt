@@ -36,7 +36,7 @@ Root `moon.pkg` and root `*.mbt` files contain:
 
 These files support `wasm`, `wasm-gc`, `js`, and `native`. They receive all nondeterministic inputs explicitly and contain no filesystem or HTTP behavior.
 
-The implemented slice includes atomic ingestion/replay, explicit supersession and retraction, closure-aware query/history/diff, fact explanation, and pre-ID candidate deduplication. Forgetting, ranked search, journals, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
+The implemented slice includes atomic ingestion/replay, explicit closure-aware reads, explanation, pre-ID candidate deduplication, ranked-candidate fusion, cosine, and bounded BFS. Forgetting, journals, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
 
 ## Event flow
 
@@ -73,6 +73,8 @@ The replay rule is authoritative; reads never filter a graph that already contai
 
 Indexes are derived accelerators. They may be rebuilt from events and never define independent truth.
 
+Retrieval never creates a second visibility path. Ranked IDs are intersected with an unbounded internal valid/known-time projection before the requested output limit. BFS uses that projection, processes complete breadth-first layers, treats Literal facts as non-expanding outgoing leaves, and orders each layer by confidence, valid start, and FactId. External rankings and Map iteration cannot bypass these rules.
+
 ## Determinism
 
 All observable arrays have a documented stable order. Sets are sorted before hashing or encoding. Map iteration does not enter result order, canonical JSON, state digests, or receipts. The core accepts caller-supplied IDs and timestamps instead of consulting ambient state.
@@ -81,7 +83,7 @@ Predicate structure uses an ASCII-only key: lowercase `A` through `Z`, collapse 
 
 Graphiti candidate statements deliberately use a different compatibility profile: CPython `3.12.14`/UCD `15.0.0` `str.lower()` followed by Python Unicode `\s+` collapse/strip. Generated lowercase, contextual-casing, and all 29 whitespace scalars keep that behavior portable across MoonBit's four targets. The generator validates fixed table counts and fully expands every compressed table back to the runtime-derived source set. Contextual final sigma is computed with linear forward/backward state; Map values are only looked up, never iterated for result order. Neither profile performs NFC/NFD normalization.
 
-`graphiti_fixture_vectors.generated_wbtest.mbt` is regenerated from the two JSON fixtures by the strict Python oracle, so MoonBit parity assertions and fixture values cannot drift independently. `.gitattributes` marks both generated MoonBit artifacts for repository tooling. Release LOC reporting lists generated production tables and generated tests separately from handwritten source and tests.
+`graphiti_fixture_vectors.generated_wbtest.mbt` is regenerated from the candidate JSON fixtures by its strict fixed-profile Python oracle. The search oracle likewise validates executable exact/adaptation inputs and expectations, renders all of `graphiti_search_fixture.generated_wbtest.mbt`, and byte-compares it under `--check`. `.gitattributes` marks generated MoonBit artifacts for repository tooling. Release LOC reporting lists generated production tables and generated tests separately from handwritten source and tests.
 
 The in-memory graph keeps private ID-to-array-position maps for event, episode, entity, and fact lookup. An apply operation copies these indexes alongside its arrays and publishes both only after complete validation. Arrays remain the source of observable order; indexes are never iterated to produce snapshots, serialization, or query results.
 

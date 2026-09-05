@@ -22,6 +22,9 @@ All notable changes to FactEpoch-mbt will be documented in this file. The format
 - Added a generated CPython 3.12.14/UCD 15.0.0 lowercase profile, exact/adaptation fixtures, and Python drift checks without adding a runtime dependency.
 - Generated MoonBit parity tests directly from strictly validated fixtures, including contextual sigma, compressed-run gaps, non-BMP lowercase, and all pinned whitespace data.
 - Made result parity compositional: entity-reference candidates report both exact upstream behavior and explicit group/provenance adaptations, while literals report adaptation only.
+- Added canonical external ranked-candidate DTOs, deterministic reciprocal-rank fusion, safe cosine similarity, and closure-aware `query_ranked`.
+- Added bounded directional BFS with Literal leaves, filtered traversal, minimum-depth deduplication, and stable depth/confidence/time/ID ordering.
+- Added pinned Graphiti search fixtures and a strict CPython renderer/oracle that separates exact formulas from deterministic safety adaptations and byte-checks the generated MoonBit tests.
 
 ### Documentation
 

@@ -43,6 +43,8 @@ Expansion happens through application schemas, ranked-candidate producers, and s
 
 The implemented Graphiti candidate helper is an interoperability boundary, not the product thesis: it prepares extracted entity-reference candidates before authoritative IDs and time are allocated while preserving every Episode source as an explicit adaptation.
 
+The implemented retrieval layer remains storage-neutral. An embedding, lexical, or external search service supplies ranked fact IDs; FactEpoch fuses them deterministically and intersects them with the same `valid_at × known_at` visibility rules used by ordinary queries. Bounded BFS serves small auditable neighborhoods, including explicit literal leaves, without turning the package into an ANN store, BM25 engine, or general graph database.
+
 ## Re-evaluation rule
 
 If a maintained Mooncakes package is found to expose the six core criteria, the project will document whether to collaborate, depend on it, narrow scope further, or stop duplicative work. The README will not preserve a differentiation claim contradicted by current evidence.

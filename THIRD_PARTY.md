@@ -8,7 +8,7 @@
 - Upstream license: Apache License 2.0
 - Upstream copyright notice used by this project: `Copyright 2024, Zep Software, Inc.`
 
-`graphiti_normalize.mbt`, `graphiti_candidate_dedup.mbt`, and the development-only Python oracle translate, modify, or directly reproduce the pinned pre-ID entity-edge normalization/deduplication behavior. Graphiti is not a runtime dependency. FactEpoch's episode-reference union, literal pass-through, explicit group isolation, and conflict structural guards are recorded as `documented_adaptation`; ranking remains planned.
+`graphiti_normalize.mbt`, `graphiti_candidate_dedup.mbt`, `graphiti_retrieval.mbt`, and the development-only Python oracles translate, modify, or directly reproduce the pinned pre-ID entity-edge normalization/deduplication and search-helper behavior. Graphiti is not a runtime dependency. FactEpoch's episode-reference union, literal pass-through, explicit group isolation, conflict structural guards, retrieval validation, canonical RRF accumulation, and stable ID tie breaking are recorded as `documented_adaptation`.
 
 Every future file that is translated from or structurally derived from Graphiti source must include this leading notice in the appropriate comment syntax:
 

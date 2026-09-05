@@ -1,6 +1,6 @@
 # Roadmap
 
-**Project status: Implementation in progress.** The repository begins with a documentation and policy baseline. Every capability below remains planned until its tests, implementation, generated interface review, and changelog entry land together.
+**Project status: Implementation in progress.** The portable core already covers domain validation, atomic event replay, bitemporal lifecycle queries, provenance explanation, Graphiti candidate compatibility, and deterministic local retrieval. Remaining capabilities below are planned until their tests, implementation, generated interface review, and changelog entry land together.
 
 ## Foundation
 

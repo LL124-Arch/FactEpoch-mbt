@@ -4,14 +4,15 @@ This page records claims FactEpoch does not make.
 
 ## Current status
 
-The repository contains a buildable, tested portable core for domain values, event replay, explicit terminal closures, bitemporal reads, explanations, and pre-ID candidate deduplication. Pinned Graphiti fixtures and Python drift tools are present. There is no CLI, published Mooncakes artifact, performance result, ranked retrieval, journal, or compaction implementation yet.
+The repository contains a buildable, tested portable core for domain values, event replay, explicit terminal closures, bitemporal reads, explanations, pre-ID candidate deduplication, deterministic rank fusion, time-filtered ranked queries, and bounded BFS. Pinned Graphiti fixtures and Python drift tools are present. There is no CLI, published Mooncakes artifact, performance result, journal, forgetting, or compaction implementation yet.
 
 ## Version-one limits
 
 - The core is an in-memory deterministic projection, not a graph database or distributed service.
 - No SQLite, Neo4j, FalkorDB, Kuzu, Neptune, ANN index, or BM25 database is included.
-- BFS is bounded and intended for local neighborhoods, not unbounded graph analytics.
-- Cosine and RRF operate on caller-provided data; FactEpoch does not create embeddings.
+- BFS is bounded to depth 64, scans the current in-memory projection, and is intended for local neighborhoods rather than unbounded graph analytics.
+- Cosine and RRF operate on caller-provided data; FactEpoch neither creates embeddings nor assigns semantic meaning to ranking-source names or optional source scores.
+- Finite vector inputs whose arithmetic overflows are rejected. RRF requires each source list to provide a complete zero-based ranking with no duplicate IDs or ranks.
 - Graphiti support is selective and fixture-scoped, not API-compatible or drop-in.
 - Unicode compatibility is limited to CPython `3.12.14` with UCD `15.0.0`; no claim is made for every Graphiti/Python/Unicode combination, and NFC/NFD remain distinct.
 - Valid time is supplied by the caller or an untrusted extractor candidate; the kernel validates structure, not truth.

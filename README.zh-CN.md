@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-> **状态：事实生命周期、双时态读取与正式 ID 前候选去重已可用。** 可移植根包已提供原子写入、确定性回放、受守卫约束的事实终止、`valid_at × known_at` 读取、来源解释，以及固定 Graphiti 版本的候选兼容层。日志、压缩、遗忘、排序检索、CLI、抽取器与发布版本尚未实现。
+> **状态：事实生命周期、双时态读取、候选去重与确定性本地检索已可用。** 可移植根包已提供受守卫约束的事实终止、来源解释、排序候选融合、安全余弦评分与有界 BFS。日志、压缩、遗忘、CLI、抽取器与发布版本尚未实现。
 
 FactEpoch-mbt 是一个正在开发的、面向 Agent 记忆的纯 MoonBit 双时态事实图谱内核。它分别记录事实在现实语义中何时成立、系统何时得知它、事实来自哪个 Episode，以及哪一个显式事件替代或撤回了它。它不是完整 Agent 框架、对话缓存、向量库或图数据库。
 
@@ -32,7 +32,7 @@ moon test docs --target all
 - 已存在事件 ID 只有在完整 `RecordedEvent`（stream、顺序、时间、变体和领域 payload）相同时才按幂等重放处理；任一部分不同都会报错。
 - 替代与撤回必须显式发生，模型不能静默令事实失效。
 - 断言保持不可变，每个事实最多一个可审计终止闭包；有效期上界由闭包派生，而不重写来源断言。
-- 保留 Episode 到事实的来源链、确定性历史、按分数/时间/ID 的稳定排序，以及 BFS、余弦评分、RRF。
+- 保留 Episode 到事实的来源链、确定性历史、按深度/分数/时间/ID 的 BFS 稳定排序、安全余弦评分、RRF，以及带时态过滤的外部候选。
 - 正式 ID 分配前，实体引用候选保留首项，并以明确的 FactEpoch 适配合并所有 Episode 来源；literal 候选逐项保留。
 - 版本化 canonical JSONL、SHA-256 事件链、语义状态摘要和产物摘要。
 - 先冻结遗忘计划，再逻辑遗忘；随后可选用非原地 preserve 或 redact 压缩。
@@ -65,6 +65,8 @@ Mooncakes 已经存在有价值的记忆、Agent、检索和向量存储项目�
 ## 选择性迁移 Graphiti
 
 语义参考固定为 [Graphiti](https://github.com/getzep/graphiti) `0.30.1`、commit [`547422865cca9fb5a82915c074d899428c145ff4`](https://github.com/getzep/graphiti/tree/547422865cca9fb5a82915c074d899428c145ff4)。已实现的正式 ID 前 helper 按有向端点，以及 `statement.lower()` 后执行 Python Unicode `\s+` 折叠/去边界空白来匹配实体引用候选；精确运行时配置固定为 CPython `3.12.14` 与 UCD `15.0.0`，不做 casefold 或 NFC/NFD 规范化。显式 group 隔离、稳定成员记录、Episode 来源并集和 literal 直通均属于有文档的 FactEpoch 适配，因此实体引用结果同时暴露 exact 与 adaptation 标签，literal 只暴露 adaptation。正式 `FactId` 不进入这个 helper，也绝不会被静默合并。
+
+本地检索 helper 通过固定 fixture 复现 Graphiti 在合法输入上的余弦与零基 RRF 公式。FactEpoch 另外拒绝含歧义的排名和非有限数值运算，按规范化来源顺序累加，并用 `FactId` 打破同分。这些安全与确定性规则属于有文档的适配；双时态排序连接和有界 BFS 是 FactEpoch 自有行为，不宣称 Graphiti API 兼容。
 
 Graphiti issue [#1728](https://github.com/getzep/graphiti/issues/1728) 记录了无关事实被错误失效的风险。FactEpoch 因此要求被替代事实属于同一 group，并匹配 subject 与 predicate/端点结构。这个更严格的行为会标记为 `documented_adaptation`，不会伪装成上游精确对齐。
 

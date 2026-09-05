@@ -1,6 +1,6 @@
 # FactEpoch-mbt v1 Design Contract
 
-This document freezes the intended public behavior for v1. Foundation types, atomic application of assertion/supersession/retraction events, closure-aware bitemporal query/history/diff, and explanation are implemented. Journal, compaction, forgetting, CLI, search, and extraction sections remain a contract to test against rather than a claim of current availability.
+This document freezes the intended public behavior for v1. Foundation types, atomic application of assertion/supersession/retraction events, closure-aware bitemporal query/history/diff and explanation, plus deterministic retrieval/search helpers are implemented. Journal, compaction, forgetting, CLI, and extraction sections remain a contract to test against rather than a claim of current availability.
 
 ## Purpose
 
@@ -195,7 +195,8 @@ MemoryGraph::replay(Array[RecordedEvent]) -> Result[MemoryGraph, MemoryError]
 MemoryGraph::query(Self, FactQuery) -> Result[Array[FactView], MemoryError]
 MemoryGraph::history(Self, HistoryQuery) -> Result[Array[FactView], MemoryError]
 MemoryGraph::diff(Self, DiffQuery) -> Result[FactDiff, MemoryError]
-MemoryGraph::neighbors(Self, NeighborQuery) -> Result[Array[FactView], MemoryError]
+MemoryGraph::query_ranked(Self, FactQuery, Array[FusedCandidate]) -> Result[Array[RankedFactView], MemoryError]
+MemoryGraph::neighbors(Self, NeighborQuery) -> Result[Array[NeighborView], MemoryError]
 MemoryGraph::explain(Self, FactId, valid_at: Timestamp, known_at: Timestamp) -> Result[ExplainReport, MemoryError]
 MemoryGraph::plan_forget(Self, ForgetSelector, planned_at: Timestamp, reason: String) -> Result[ForgetPlan, MemoryError]
 MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
@@ -205,7 +206,7 @@ MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
 
 ### Query DTOs
 
-The implemented `FactQuery` requires `valid_at`, `known_at`, a `FactFilter`, and a limit from 1 through 10,000. `FactFilter` supports optional group, subject, normalized predicate, exact object, and provenance-episode constraints. Ranked candidates and minimum score belong to the later search milestone.
+The implemented `FactQuery` requires `valid_at`, `known_at`, a `FactFilter`, and a limit from 1 through 10,000. `FactFilter` supports optional group, subject, normalized predicate, exact object, and provenance-episode constraints. The same query object is used by `query_ranked`, where its limit is applied only after the external ranking has been joined to all temporally visible matching facts.
 
 Every known-time boundary is evaluated by collecting events in stream order through `recorded_at <= known_at` and calling the normal replay path. Monotonic `recorded_at` permits collection to stop at the first future event. `history` replays through its inclusive upper endpoint; knowledge-axis diff replays both endpoints, while validity-axis diff replays its fixed known-time endpoint once.
 
@@ -213,30 +214,39 @@ The implemented `HistoryQuery` requires a fact ID or a group/subject/normalized-
 
 `DiffQuery` requires one valid-time point and two known-time points, or one known-time point and two valid-time points. `FactDiff` contains stable `added`, `removed`, and `unchanged` arrays.
 
-`NeighborQuery` requires a starting entity, `valid_at`, `known_at`, maximum BFS depth, direction (`Outgoing`, `Incoming`, or `Both`), optional predicate/group filters, and a result limit. A fact is traversable only when visible at both query times.
+`NeighborQuery` requires a starting entity visible in the known-time projection, `valid_at`, `known_at`, a maximum BFS depth from 0 through 64, direction (`Outgoing`, `Incoming`, or `Both`), optional predicate/group filters, and a result limit. A fact is traversable only when visible at both query times and matching filters. A zero-depth query still validates the starting entity and then returns no facts.
 
-The implemented `FactView` contains the immutable assertion, derived predicate key, first activation event/time, effective valid upper bound, and `score_basis_points`. That score equals assertion confidence in this milestone; ranked `Double` scores arrive with search. Public query, history, and diff partitions are sorted by descending score, descending `valid_from`, then ascending fact ID. Ties never depend on map iteration.
+The implemented `FactView` contains the immutable assertion, derived predicate key, first activation event/time, effective valid upper bound, and `score_basis_points`. That score equals assertion confidence. Public query, history, and diff partitions are sorted by descending score, descending `valid_from`, then ascending fact ID. Ties never depend on map iteration.
 
 The current `ExplainReport` contains a `FactView`, query times, visibility reason, source episodes, first activation event, and the knowledge-bounded supersession/retraction lifecycle events. Evidence rendering, forget markers, redaction markers, and ranked score contributions are future additions; the report never fabricates missing source text.
 
 ### Search helpers
 
-The root package provides deterministic cosine similarity for equal-length finite vectors, BFS over the visible fact graph, and reciprocal-rank fusion (RRF). Invalid vector dimensions or non-finite values are errors. RRF uses an explicit positive `k` and stable candidate-ID tie breaking.
+The root package provides a fixed-order cosine calculation for equal-length finite vectors, BFS over the visible fact graph, and reciprocal-rank fusion (RRF). Cosine returns positive zero for two empty vectors or whenever either vector has zero norm, matching the pinned Graphiti helper. Dimension mismatch, non-finite inputs, and non-finite intermediate arithmetic are typed errors; the result is not clamped. The implementation fixes operation order and input-permutation behavior, but does not promise bit-identical floating-point results across every current or future backend.
+
+RRF uses `sum(1 / (zero_based_rank + k))`, a positive integer `k`, and an inclusive minimum-score threshold. Ranked lists require a non-blank unique source and ranks exactly `0..N-1`; each list rejects duplicate fact IDs and duplicate ranks. Input order is normalized by source and rank before floating-point accumulation. Fused output is sorted by descending score and ascending fact ID, with per-source contributions retained and defensively copied.
 
 Embedding and BM25 implementations are outside v1. They integrate through:
 
 ```text
 RankedCandidate
   fact_id: FactId
-  rank: Int
-  score: Double?
-  source: String
+  zero_based_rank: Int
+  source_score: Double?
 
 RankedCandidateList
+  source: String
   candidates: Array[RankedCandidate]
+
+FusedCandidate
+  fact_id: FactId
+  score: Double
+  contributions: Array[RankContribution]
 ```
 
-The DTO is synchronous data. No async `Embedder` API is frozen in v1.
+The DTO is synchronous data. `source_score` is validated and preserved on its input candidate but deliberately ignored by RRF. `query_ranked` rejects duplicate fused IDs, projects at `known_at`, applies closure-aware `valid_at` and all ordinary filters without the ordinary output limit, joins visible fact IDs to fused scores, sorts by score/valid-start/fact-ID, and only then applies the requested limit. Unknown, future, invalid-time, or closed candidates are silently absent rather than bypassing temporal policy. No async `Embedder` API is frozen in v1.
+
+BFS processes complete depth layers. Entity-reference facts expand according to their directed endpoints. Literal facts are returned as non-expanding leaves only when their subject is reached in `Outgoing` or `Both`; `Incoming` omits them. A fact is returned once at its minimum depth, cycles and self-loops terminate through visited sets, and final order is depth ascending, confidence descending, valid start descending, then fact ID ascending. Each frontier keeps an array for stable layer order and a map-backed set for membership checks. Filtering a fact also prevents traversal through it.
 
 ## Forget contract
 
@@ -326,7 +336,7 @@ Transport, timeout, HTTP status, malformed response, invalid extraction, and lim
 
 ## Errors and reports
 
-The current `MemoryError` categories cover core identifier, timestamp, interval, metadata, evidence and confidence validation; stream sequence/time and event/domain identity conflicts; missing or cross-group references; query limits/ranges; and explicit closure decision, duplicate-reference, already-closed, and structural-guard failures. JSON/schema/canonicalization, hash/truncation, vector, I/O, extractor, stale forget-plan, and redaction-history errors belong to later milestones.
+The current `MemoryError` categories cover core identifier, timestamp, interval, metadata, evidence and confidence validation; stream sequence/time and event/domain identity conflicts; missing or cross-group references; query limits/ranges; explicit closure decision, duplicate-reference, already-closed, and structural-guard failures; and retrieval dimension, finite-value, rank, duplicate-source/candidate, and neighbor-depth validation. JSON/schema/canonicalization, hash/truncation, I/O, extractor, stale forget-plan, and redaction-history errors belong to later milestones.
 
 `ApplyReport` currently contains defensively copied accepted and idempotent event IDs, created episode/entity/fact counts, `closed_fact_count`, and the resulting event count. It is returned only for a successful atomic batch. A semantic-state digest will be added only after the canonical state encoding and integrity package define the exact bytes covered; the current API does not return a placeholder digest.
 

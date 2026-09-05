@@ -6,7 +6,11 @@ import {
 }
 
 // Values
+pub fn cosine_similarity(ArrayView[Double], ArrayView[Double]) -> Double raise MemoryError
+
 pub fn deduplicate_candidates(Array[CandidateFact]) -> CandidateDedupReport raise MemoryError
+
+pub fn reciprocal_rank_fusion(Array[RankedCandidateList], RrfConfig) -> Array[FusedCandidate] raise MemoryError
 
 // Errors
 pub(all) suberror MemoryError {
@@ -36,6 +40,19 @@ pub(all) suberror MemoryError {
   MissingEntity(EntityId)
   MissingEpisode(EpisodeId)
   GroupMismatch(GroupReference)
+  InvalidVectorDimensions(Int, Int)
+  NonFiniteVectorValue(VectorSide, Int)
+  NonFiniteVectorComputation
+  NonFiniteRankedScore(FactId)
+  InvalidRankConstant(Int)
+  InvalidMinimumScore
+  InvalidCandidateRank(FactId, Int)
+  DuplicateRankedCandidate(FactId)
+  DuplicateCandidateRank(Int)
+  InvalidRankSource
+  DuplicateRankSource
+  DuplicateFusedCandidate(FactId)
+  InvalidNeighborDepth(Int)
 } derive(Eq, @debug.Debug)
 
 // Types and methods
@@ -265,6 +282,13 @@ pub(all) enum FactVisibility {
   EndedByRetraction
 } derive(Eq)
 
+pub struct FusedCandidate {
+  // private fields
+} derive(Eq)
+pub fn FusedCandidate::contributions(Self) -> Array[RankContribution]
+pub fn FusedCandidate::fact_id(Self) -> FactId
+pub fn FusedCandidate::score(Self) -> Double
+
 pub struct GroupId {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
@@ -302,8 +326,10 @@ pub fn MemoryGraph::apply(Self, Array[RecordedEvent]) -> Result[ApplyReport, Mem
 pub fn MemoryGraph::diff(Self, DiffQuery) -> Result[FactDiff, MemoryError]
 pub fn MemoryGraph::explain(Self, FactId, Timestamp, Timestamp) -> Result[ExplainReport, MemoryError]
 pub fn MemoryGraph::history(Self, HistoryQuery) -> Result[Array[FactView], MemoryError]
+pub fn MemoryGraph::neighbors(Self, NeighborQuery) -> Result[Array[NeighborView], MemoryError]
 pub fn MemoryGraph::new() -> Self
 pub fn MemoryGraph::query(Self, FactQuery) -> Result[Array[FactView], MemoryError]
+pub fn MemoryGraph::query_ranked(Self, FactQuery, Array[FusedCandidate]) -> Result[Array[RankedFactView], MemoryError]
 pub fn MemoryGraph::replay(Array[RecordedEvent]) -> Result[Self, MemoryError]
 pub fn MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
 
@@ -315,6 +341,31 @@ pub fn Metadata::entries(Self) -> Array[(String, String)]
 pub fn Metadata::is_empty(Self) -> Bool
 pub fn Metadata::length(Self) -> Int
 pub fn Metadata::new(Array[(String, String)]) -> Self raise MemoryError
+
+pub(all) enum NeighborDirection {
+  Outgoing
+  Incoming
+  Both
+} derive(Eq)
+
+pub struct NeighborQuery {
+  // private fields
+}
+pub fn NeighborQuery::direction(Self) -> NeighborDirection
+pub fn NeighborQuery::group_id(Self) -> GroupId?
+pub fn NeighborQuery::known_at(Self) -> Timestamp
+pub fn NeighborQuery::limit(Self) -> Int
+pub fn NeighborQuery::max_depth(Self) -> Int
+pub fn NeighborQuery::new(EntityId, Timestamp, Timestamp, Int, NeighborDirection, group_id? : GroupId, predicate? : String, limit? : Int) -> Self raise MemoryError
+pub fn NeighborQuery::predicate_key(Self) -> String?
+pub fn NeighborQuery::start(Self) -> EntityId
+pub fn NeighborQuery::valid_at(Self) -> Timestamp
+
+pub struct NeighborView {
+  // private fields
+} derive(Eq)
+pub fn NeighborView::depth(Self) -> Int
+pub fn NeighborView::view(Self) -> FactView
 
 pub(all) enum ParityKind {
   ExactUpstream
@@ -329,6 +380,35 @@ pub fn Provenance::evidence(Self) -> Array[EvidenceSpan]
 pub fn Provenance::extractor(Self) -> String?
 pub fn Provenance::new(Array[EpisodeId], Array[EvidenceSpan], String?) -> Self raise MemoryError
 
+pub struct RankContribution {
+  // private fields
+} derive(Eq)
+pub fn RankContribution::contribution(Self) -> Double
+pub fn RankContribution::source(Self) -> String
+pub fn RankContribution::zero_based_rank(Self) -> Int
+
+pub struct RankedCandidate {
+  // private fields
+} derive(Eq)
+pub fn RankedCandidate::fact_id(Self) -> FactId
+pub fn RankedCandidate::new(FactId, Int, Double?) -> Self raise MemoryError
+pub fn RankedCandidate::source_score(Self) -> Double?
+pub fn RankedCandidate::zero_based_rank(Self) -> Int
+
+pub struct RankedCandidateList {
+  // private fields
+}
+pub fn RankedCandidateList::candidates(Self) -> Array[RankedCandidate]
+pub fn RankedCandidateList::new(String, Array[RankedCandidate]) -> Self raise MemoryError
+pub fn RankedCandidateList::source(Self) -> String
+
+pub struct RankedFactView {
+  // private fields
+} derive(Eq)
+pub fn RankedFactView::contributions(Self) -> Array[RankContribution]
+pub fn RankedFactView::score(Self) -> Double
+pub fn RankedFactView::view(Self) -> FactView
+
 pub struct RecordedEvent {
   // private fields
 } derive(Eq)
@@ -338,6 +418,14 @@ pub fn RecordedEvent::new(String, Int64, EventId, Timestamp, MemoryEvent) -> Sel
 pub fn RecordedEvent::recorded_at(Self) -> Timestamp
 pub fn RecordedEvent::seq(Self) -> Int64
 pub fn RecordedEvent::stream_id(Self) -> String
+
+pub struct RrfConfig {
+  // private fields
+}
+pub fn RrfConfig::default() -> Self
+pub fn RrfConfig::minimum_score(Self) -> Double
+pub fn RrfConfig::new(Int, Double) -> Self raise MemoryError
+pub fn RrfConfig::rank_constant(Self) -> Int
 
 type StoredFact derive(Eq)
 
@@ -364,6 +452,11 @@ pub fn ValidInterval::end(Self) -> Timestamp?
 pub fn ValidInterval::new(Timestamp, Timestamp?) -> Self raise MemoryError
 pub fn ValidInterval::overlaps(Self, Self) -> Bool
 pub fn ValidInterval::start(Self) -> Timestamp
+
+pub(all) enum VectorSide {
+  LeftVector
+  RightVector
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

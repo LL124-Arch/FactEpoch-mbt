@@ -1,0 +1,214 @@
+{
+  "fixture_schema": "factepoch.graphiti-search/v1",
+  "parity_kind": "documented_adaptation",
+  "upstream": {
+    "repository": "https://github.com/getzep/graphiti",
+    "version": "0.30.1",
+    "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+    "source": "graphiti_core/search/search_utils.py",
+    "symbols": ["calculate_cosine_similarity", "rrf"]
+  },
+  "cases": [
+    {
+      "name": "fact-id-tie-break",
+      "reason": "Graphiti preserves first-seen order for equal scores; FactEpoch orders equal scores by FactId.",
+      "operation": "rrf",
+      "input": {
+        "rank_constant": 1,
+        "minimum_score": 0.0,
+        "lists": [
+          {
+            "source": "right",
+            "candidates": [
+              {"fact_id": "b", "zero_based_rank": 0, "source_score": null},
+              {"fact_id": "a", "zero_based_rank": 1, "source_score": null}
+            ]
+          },
+          {
+            "source": "left",
+            "candidates": [
+              {"fact_id": "b", "zero_based_rank": 1, "source_score": null},
+              {"fact_id": "a", "zero_based_rank": 0, "source_score": null}
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "fused": [
+          {
+            "fact_id": "a",
+            "score": 1.5,
+            "contributions": [
+              {"source": "left", "zero_based_rank": 0, "contribution": 1.0},
+              {"source": "right", "zero_based_rank": 1, "contribution": 0.5}
+            ]
+          },
+          {
+            "fact_id": "b",
+            "score": 1.5,
+            "contributions": [
+              {"source": "left", "zero_based_rank": 1, "contribution": 0.5},
+              {"source": "right", "zero_based_rank": 0, "contribution": 1.0}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "canonical-source-permutation",
+      "reason": "FactEpoch sorts unique source names and ranks before IEEE-754 accumulation so source and candidate permutations are bit-stable.",
+      "operation": "rrf_permutation",
+      "input": {
+        "rank_constant": 1,
+        "minimum_score": 0.0,
+        "permutations": [
+          [
+            {
+              "source": "gamma",
+              "candidates": [
+                {"fact_id": "a", "zero_based_rank": 5, "source_score": null},
+                {"fact_id": "gamma-4", "zero_based_rank": 4, "source_score": null},
+                {"fact_id": "gamma-3", "zero_based_rank": 3, "source_score": null},
+                {"fact_id": "gamma-2", "zero_based_rank": 2, "source_score": null},
+                {"fact_id": "gamma-1", "zero_based_rank": 1, "source_score": null},
+                {"fact_id": "gamma-0", "zero_based_rank": 0, "source_score": null}
+              ]
+            },
+            {
+              "source": "alpha",
+              "candidates": [
+                {"fact_id": "b", "zero_based_rank": 1, "source_score": 0.2},
+                {"fact_id": "a", "zero_based_rank": 0, "source_score": 0.9}
+              ]
+            },
+            {
+              "source": "betaa",
+              "candidates": [
+                {"fact_id": "a", "zero_based_rank": 1, "source_score": null},
+                {"fact_id": "beta-00", "zero_based_rank": 0, "source_score": null}
+              ]
+            }
+          ],
+          [
+            {
+              "source": "betaa",
+              "candidates": [
+                {"fact_id": "beta-00", "zero_based_rank": 0, "source_score": null},
+                {"fact_id": "a", "zero_based_rank": 1, "source_score": null}
+              ]
+            },
+            {
+              "source": "gamma",
+              "candidates": [
+                {"fact_id": "gamma-0", "zero_based_rank": 0, "source_score": null},
+                {"fact_id": "gamma-1", "zero_based_rank": 1, "source_score": null},
+                {"fact_id": "gamma-2", "zero_based_rank": 2, "source_score": null},
+                {"fact_id": "gamma-3", "zero_based_rank": 3, "source_score": null},
+                {"fact_id": "gamma-4", "zero_based_rank": 4, "source_score": null},
+                {"fact_id": "a", "zero_based_rank": 5, "source_score": null}
+              ]
+            },
+            {
+              "source": "alpha",
+              "candidates": [
+                {"fact_id": "a", "zero_based_rank": 0, "source_score": 0.9},
+                {"fact_id": "b", "zero_based_rank": 1, "source_score": 0.2}
+              ]
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "fused": [
+          {
+            "fact_id": "a",
+            "score": 1.6666666666666667,
+            "contributions": [
+              {"source": "alpha", "zero_based_rank": 0, "contribution": 1.0},
+              {"source": "betaa", "zero_based_rank": 1, "contribution": 0.5},
+              {"source": "gamma", "zero_based_rank": 5, "contribution": 0.16666666666666666}
+            ]
+          },
+          {
+            "fact_id": "beta-00",
+            "score": 1.0,
+            "contributions": [
+              {"source": "betaa", "zero_based_rank": 0, "contribution": 1.0}
+            ]
+          },
+          {
+            "fact_id": "gamma-0",
+            "score": 1.0,
+            "contributions": [
+              {"source": "gamma", "zero_based_rank": 0, "contribution": 1.0}
+            ]
+          },
+          {
+            "fact_id": "b",
+            "score": 0.5,
+            "contributions": [
+              {"source": "alpha", "zero_based_rank": 1, "contribution": 0.5}
+            ]
+          },
+          {
+            "fact_id": "gamma-1",
+            "score": 0.5,
+            "contributions": [
+              {"source": "gamma", "zero_based_rank": 1, "contribution": 0.5}
+            ]
+          },
+          {
+            "fact_id": "gamma-2",
+            "score": 0.3333333333333333,
+            "contributions": [
+              {"source": "gamma", "zero_based_rank": 2, "contribution": 0.3333333333333333}
+            ]
+          },
+          {
+            "fact_id": "gamma-3",
+            "score": 0.25,
+            "contributions": [
+              {"source": "gamma", "zero_based_rank": 3, "contribution": 0.25}
+            ]
+          },
+          {
+            "fact_id": "gamma-4",
+            "score": 0.2,
+            "contributions": [
+              {"source": "gamma", "zero_based_rank": 4, "contribution": 0.2}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "reject-ambiguous-ranking",
+      "reason": "FactEpoch rejects malformed rankings rather than letting duplicate or missing positions alter fusion.",
+      "operation": "rank_validation",
+      "input": {
+        "checks": [
+          {"kind": "blank_source", "expected_error": "InvalidRankSource"},
+          {"kind": "duplicate_fact_id", "expected_error": "DuplicateRankedCandidate"},
+          {"kind": "duplicate_rank", "expected_error": "DuplicateCandidateRank"},
+          {"kind": "rank_gap", "expected_error": "InvalidCandidateRank"},
+          {"kind": "duplicate_source", "expected_error": "DuplicateRankSource"}
+        ]
+      },
+      "expected": {"all_rejected": true}
+    },
+    {
+      "name": "reject-nonfinite-values",
+      "reason": "FactEpoch rejects non-finite vector inputs, source scores, thresholds, and finite-input overflow before sorting.",
+      "operation": "finite_validation",
+      "input": {
+        "checks": [
+          {"kind": "left_nan", "expected_error": "NonFiniteVectorValue"},
+          {"kind": "source_score_infinity", "expected_error": "NonFiniteRankedScore"},
+          {"kind": "minimum_score_nan", "expected_error": "InvalidMinimumScore"},
+          {"kind": "cosine_overflow", "expected_error": "NonFiniteVectorComputation"}
+        ]
+      },
+      "expected": {"all_rejected": true}
+    }
+  ]
+}

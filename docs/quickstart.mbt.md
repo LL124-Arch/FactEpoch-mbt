@@ -1,6 +1,6 @@
 # Quickstart
 
-This example constructs source material, an entity, and a fact, commits all three as one atomic batch, then asks the same valid-time question immediately before and at the fact's known-time activation. It does not read a clock or touch external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
+This example constructs source material, an entity, and a fact, commits all three as one atomic batch, asks the same valid-time question at two known-time boundaries, records a correction, and then exercises ranked and graph retrieval without external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
 
 ```mbt check
 ///|
@@ -148,6 +148,40 @@ test "quickstart atomically records a source-backed fact" {
     }
     Err(_) => fail("closure-aware query must succeed")
   }
+  let fused = @factepoch.reciprocal_rank_fusion(
+    [
+      @factepoch.RankedCandidateList::new("manual", [
+        @factepoch.RankedCandidate::new(replacement.id(), 0, Some(1.0)),
+        @factepoch.RankedCandidate::new(fact.id(), 1, Some(0.5)),
+      ]),
+    ],
+    @factepoch.RrfConfig::default(),
+  )
+  match graph.query_ranked(after_correction, fused) {
+    Ok(facts) => {
+      inspect(facts.length(), content="1")
+      inspect(facts[0].view().fact().id() == replacement.id(), content="true")
+    }
+    Err(_) => fail("ranked query must preserve temporal visibility")
+  }
+  match
+    graph.neighbors(
+      @factepoch.NeighborQuery::new(
+        subject.id(),
+        @factepoch.Timestamp::from_unix_millis(1_787_558_400_000L),
+        learned_later,
+        1,
+        Outgoing,
+        predicate="prefers_language",
+      ),
+    ) {
+    Ok(facts) => {
+      inspect(facts.length(), content="1")
+      inspect(facts[0].depth(), content="1")
+      inspect(facts[0].view().fact().id() == replacement.id(), content="true")
+    }
+    Err(_) => fail("bounded neighbor query must succeed")
+  }
   match
     graph.explain(
       fact.id(),
@@ -170,4 +204,4 @@ Run it with:
 moon test docs --target all
 ```
 
-The portable in-memory graph supports deterministic ingestion/replay, explicit supersession and retraction, closure-aware `valid_at × known_at` query/history/diff, and explanation. Forget-aware projection and ranked search remain later capabilities.
+The portable in-memory graph supports deterministic ingestion/replay, explicit supersession and retraction, closure-aware `valid_at × known_at` query/history/diff, explanation, external-ranked candidate fusion, and bounded directional BFS. Forget-aware projection remains a later capability.

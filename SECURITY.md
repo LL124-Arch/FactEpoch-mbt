@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-FactEpoch-mbt has no released or production-supported version. The repository contains a tested in-memory event projection, explicit terminal closures, bitemporal reads, and explanations, but lacks the canonical journal, integrity verification, operational hardening, and release audit required for deployment.
+FactEpoch-mbt has no released or production-supported version. The repository contains a tested in-memory event projection, explicit terminal closures, bitemporal reads, explanations, and deterministic local retrieval, but lacks the canonical journal, integrity verification, operational hardening, and release audit required for deployment.
 
 Security support will begin with the first published release. At that point this section will identify supported version lines using actual release identifiers.
 
@@ -14,7 +14,7 @@ Include a concise impact description, affected version or commit, reproduction c
 
 ## Security boundary
 
-The implemented foundation covers deterministic domain validation, atomic replay, bitemporal queries, structural conflict guards, and logical retraction. The planned trusted core extends that boundary to canonical serialization, hash-chain verification, journal replay, forgetting, and non-in-place compaction. Its guarantees are deliberately narrow:
+The implemented foundation covers deterministic domain validation, atomic replay, bitemporal queries, structural conflict guards, logical retraction, validation of caller-supplied rankings/vectors, and temporal filtering before ranked or graph results are returned. The planned trusted core extends that boundary to canonical serialization, hash-chain verification, journal replay, forgetting, and non-in-place compaction. Its guarantees are deliberately narrow:
 
 - A valid hash chain can reveal byte-level modification, truncation when an expected head is known, reordering, or broken ancestry.
 - It does not prove that a statement is true, that a source is trustworthy, or that the original writer was authorized.
@@ -28,6 +28,7 @@ The implemented foundation covers deterministic domain validation, atomic replay
 - invalid or ambiguous timestamps and empty or inverted intervals;
 - replayed identifiers, forged references, non-increasing per-stream sequences, decreasing record times, and broken hash ancestry;
 - conflict decisions made against stale state;
+- duplicate or malformed ranked sources, non-finite vector arithmetic, and externally ranked IDs attempting to bypass valid/known-time visibility;
 - partial writes and destination/source aliasing during compaction;
 - prompt injection, untrusted model output, credential leakage, unbounded responses, and unexpected network destinations in the optional adapter;
 - accidental inclusion of sensitive runtime data or real user content in fixtures and diagnostics.

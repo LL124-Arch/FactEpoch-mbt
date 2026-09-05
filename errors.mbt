@@ -9,6 +9,13 @@ pub(all) enum GroupReference {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// Identifies an input vector without carrying any vector content.
+pub(all) enum VectorSide {
+  LeftVector
+  RightVector
+} derive(Eq, @debug.Debug)
+
+///|
 /// Stable validation categories returned by the portable FactEpoch core.
 pub(all) suberror MemoryError {
   InvalidIdentifier(String, String)
@@ -37,4 +44,17 @@ pub(all) suberror MemoryError {
   MissingEntity(EntityId)
   MissingEpisode(EpisodeId)
   GroupMismatch(GroupReference)
+  InvalidVectorDimensions(Int, Int)
+  NonFiniteVectorValue(VectorSide, Int)
+  NonFiniteVectorComputation
+  NonFiniteRankedScore(FactId)
+  InvalidRankConstant(Int)
+  InvalidMinimumScore
+  InvalidCandidateRank(FactId, Int)
+  DuplicateRankedCandidate(FactId)
+  DuplicateCandidateRank(Int)
+  InvalidRankSource
+  DuplicateRankSource
+  DuplicateFusedCandidate(FactId)
+  InvalidNeighborDepth(Int)
 } derive(Eq, @debug.Debug)

@@ -8,3 +8,4 @@
 *.yaml text eol=lf
 *.generated.mbt linguist-generated=true
 *.generated_wbtest.mbt linguist-generated=true
+compat/python/*.py text eol=lf

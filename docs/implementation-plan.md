@@ -43,7 +43,11 @@ Outcome: deterministic local retrieval composes with external ranked candidates.
 - Implement the ranked-candidate DTO without freezing an async embedder interface.
 - Prove stable score/time/ID ordering independent of insertion and map iteration order.
 
-Evidence: permutation tests return byte-identical result sequences.
+Evidence: permutation tests return identical FactId sequences and bit-identical fused scores/contributions within each target. Cross-backend floating-point bit identity is not a compatibility promise.
+
+Progress: implemented. The portable root canonicalizes ranked lists, reproduces pinned cosine/RRF formulas on well-formed fixtures, applies deterministic safety adaptations, intersects fused IDs with the full bitemporal visibility projection, and traverses visible facts with bounded directional BFS.
+
+Evidence: generated Graphiti search fixtures and handwritten temporal, ownership, error, permutation, and traversal tests pass on all four core targets. A CPython oracle verifies the pinned exact formulas, keeps Graphiti's first-seen tie separate from FactEpoch's ID-tie adaptation, renders the full MoonBit search test from executable adaptation data, and byte-compares it under `--check`.
 
 ## Journal and integrity checkpoint
 

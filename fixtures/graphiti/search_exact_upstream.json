@@ -1,0 +1,35 @@
+{
+  "fixture_schema": "factepoch.graphiti-search/v1",
+  "parity_kind": "exact_upstream",
+  "upstream": {
+    "repository": "https://github.com/getzep/graphiti",
+    "version": "0.30.1",
+    "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+    "source": "graphiti_core/search/search_utils.py",
+    "symbols": ["calculate_cosine_similarity", "rrf"]
+  },
+  "cosine_cases": [
+    {"name": "empty-zero-norm", "left": [], "right": [], "expected": 0.0},
+    {"name": "one-zero-norm", "left": [0.0, 0.0], "right": [1.0, 2.0], "expected": 0.0},
+    {"name": "orthogonal", "left": [1.0, 0.0], "right": [0.0, 1.0], "expected": 0.0},
+    {"name": "aligned", "left": [1.0, 2.0], "right": [1.0, 2.0], "expected": 1.0}
+  ],
+  "rrf_cases": [
+    {
+      "name": "k-one-first-seen-tie",
+      "rank_constant": 1,
+      "minimum_score": 0.0,
+      "lists": [["b", "a"], ["a", "b"]],
+      "expected_ids": ["b", "a"],
+      "expected_scores": [1.5, 1.5]
+    },
+    {
+      "name": "inclusive-threshold",
+      "rank_constant": 1,
+      "minimum_score": 0.5,
+      "lists": [["a", "b"]],
+      "expected_ids": ["a", "b"],
+      "expected_scores": [1.0, 0.5]
+    }
+  ]
+}

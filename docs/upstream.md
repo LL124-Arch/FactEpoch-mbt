@@ -19,7 +19,7 @@ The commit pin is the only upstream baseline for v1 parity fixtures. A later Gra
 | Entity-edge candidate deduplication | root `CandidateFact`, `deduplicate_candidates`, and fixtures | `exact_upstream` for directed endpoints, pinned statement normalization, and first retention; provenance preservation and group isolation are adaptations. |
 | Temporal validity | root interval and replay logic | Selective translation, extended with mandatory bitemporal queries. |
 | Edge invalidation/supersession | root `ConflictDecision` and `SupersedeFact` | `documented_adaptation` with stricter group and structural guards. |
-| Search result ordering and rank fusion | root ranked DTO, cosine, BFS and RRF | Deterministic translation with stable ID tie-breaking. |
+| Search result ordering and rank fusion | `graphiti_retrieval.mbt`, `retrieval_query.mbt`, and search fixtures | Pinned cosine/RRF formulas where labeled `exact_upstream`; typed validation, canonical accumulation, temporal joining, and BFS are documented adaptations. |
 | Database persistence | no mapping | Not ported. Canonical JSONL is a FactEpoch design. |
 | LLM extraction orchestration | `extract/api` and thin native adapter | Replaced by a strict candidate-only boundary. |
 
@@ -62,6 +62,8 @@ The current translated/modified source mapping is:
 | `graphiti_core/utils/maintenance/dedup_helpers.py::_normalize_string_exact` | `graphiti_normalize.mbt` | Candidate statement normalization, with generated fixed-profile Unicode tables. |
 | `graphiti_core/utils/maintenance/edge_operations.py::resolve_extracted_edges` | `graphiti_candidate_dedup.mbt` | Directed entity-reference candidate key and first retention, with documented FactEpoch adaptations. |
 | both symbols above | `compat/python/oracle_graphiti_v0301.py` | Strict fixture validator and generated MoonBit-vector producer; adapted development tooling only. |
+| `graphiti_core/search/search_utils.py::{calculate_cosine_similarity,rrf}` | `graphiti_retrieval.mbt` | Cosine and RRF formulas, zero-vector behavior, and inclusive threshold, with deterministic safety adaptations. |
+| the two search symbols above | `compat/python/oracle_graphiti_search_v0301.py` | Strict formula/fixture validator and complete generated MoonBit search-test renderer; adapted development tooling only. |
 
 The MoonBit files carry this leading notice:
 
@@ -76,6 +78,12 @@ Translated and modified for MoonBit in 2026.
 The Python oracle uses the same first four attribution lines and an `Adapted as a fixture oracle` final line, accurately describing its role.
 
 The same change must update this page with the upstream source path and translated destination path. Merely learning a public algorithm or writing an independent test does not justify claiming verbatim source reuse, but the conceptual source remains documented here.
+
+## Retrieval parity boundary
+
+The well-formed cosine formula, empty/zero-norm return value, RRF contribution formula with zero-based ranks, and inclusive minimum-score threshold are `exact_upstream` against `graphiti_core/search/search_utils.py` at the pinned commit. The exact fixture records Graphiti's first-seen ordering for a tied score, and only the Python oracle asserts that ordering. Generated MoonBit tests label and exercise FactEpoch's different FactId tie rule as `documented_adaptation` rather than presenting it as exact parity.
+
+FactEpoch rejects non-finite vector inputs and computations, malformed or duplicate ranks, duplicate fact IDs within a list, and duplicate source names. It sorts sources and ranks before accumulation and breaks fused ties by `FactId`. Executable adaptation fixtures include complete ranked inputs, fused IDs, score bits, and per-source contribution expectations; the oracle renders and byte-compares the entire generated MoonBit test. These safeguards and permutation-stability rules are `documented_adaptation`. `query_ranked` and bounded directional BFS are independent FactEpoch retrieval behavior: both reuse the bitemporal visibility projection and do not claim Graphiti API parity.
 
 ## Deliberate adaptation for issue 1728
 

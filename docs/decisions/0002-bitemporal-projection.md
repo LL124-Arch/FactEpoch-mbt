@@ -13,7 +13,7 @@ We considered filtering the current graph's retained activation fields directly.
 
 `MemoryGraph::query` takes the event prefix whose envelopes have `recorded_at <= known_at`, rebuilds a temporary graph through the ordinary `MemoryGraph::replay` validation path, and only then filters assertions whose interval contains `valid_at`. Stream `recorded_at` is monotonic, so prefix collection stops at the first future event. The comparison is inclusive on known time, so all events recorded in the same millisecond are replayed; `seq` orders them but does not make only a prefix of that millisecond queryable. Valid intervals remain half-open: `[valid_from, valid_to)`.
 
-The current result score is `confidence_basis_points: Int` and results sort by descending score, descending `valid_from`, then ascending `FactId`. This is deliberately not the future ranked-candidate `Double` score.
+Ordinary query results use `confidence_basis_points: Int` and sort by descending confidence, descending `valid_from`, then ascending `FactId`. Ranked queries carry a separate fused `Double` score and retain the temporal projection before sorting by fused score, valid start, and fact ID.
 
 Predicate structure and filters use one private normalization profile:
 
