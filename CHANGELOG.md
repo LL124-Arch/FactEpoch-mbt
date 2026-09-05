@@ -4,6 +4,13 @@ All notable changes to FactEpoch-mbt will be documented in this file. The format
 
 ## Unreleased
 
+### Added
+
+- Added the `LL124-Arch/factepoch` MoonBit module and portable root package.
+- Added opaque checked identifiers, signed Unix-millisecond timestamps, and half-open valid intervals.
+- Added canonical metadata, UTF-8 evidence validation, provenance normalization, and validated episode, entity, and fact constructors.
+- Added an executable foundation quickstart and all-target tests for the public surface.
+
 ### Documentation
 
 - Established the pure-MoonBit bitemporal fact-graph scope and explicit non-goals.

@@ -1,0 +1,151 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "LL124-Arch/factepoch"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub(all) suberror MemoryError {
+  InvalidIdentifier(String, String)
+  InvalidDigest(String)
+  InvalidInterval(Timestamp, Timestamp)
+  InvalidField(String, String)
+  InvalidEvidence(String)
+  DuplicateMetadataKey(String)
+  InvalidConfidence(Int)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub struct Digest256 {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn Digest256::new(String) -> Self raise MemoryError
+pub fn Digest256::value(Self) -> String
+
+pub struct Entity {
+  // private fields
+} derive(Eq)
+pub fn Entity::group_id(Self) -> GroupId
+pub fn Entity::id(Self) -> EntityId
+pub fn Entity::kind(Self) -> String
+pub fn Entity::metadata(Self) -> Metadata
+pub fn Entity::name(Self) -> String
+pub fn Entity::new(EntityId, GroupId, String, String, String?, Metadata) -> Self raise MemoryError
+pub fn Entity::summary(Self) -> String?
+
+pub struct EntityId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EntityId::new(String) -> Self raise MemoryError
+pub fn EntityId::value(Self) -> String
+
+pub struct Episode {
+  // private fields
+} derive(Eq)
+pub fn Episode::body(Self) -> String
+pub fn Episode::group_id(Self) -> GroupId
+pub fn Episode::id(Self) -> EpisodeId
+pub fn Episode::metadata(Self) -> Metadata
+pub fn Episode::new(EpisodeId, GroupId, String, String?, Timestamp?, Timestamp?, Metadata) -> Self raise MemoryError
+pub fn Episode::occurred_from(Self) -> Timestamp?
+pub fn Episode::occurred_to(Self) -> Timestamp?
+pub fn Episode::source_uri(Self) -> String?
+
+pub struct EpisodeId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EpisodeId::new(String) -> Self raise MemoryError
+pub fn EpisodeId::value(Self) -> String
+
+pub struct EventId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EventId::new(String) -> Self raise MemoryError
+pub fn EventId::value(Self) -> String
+
+pub struct EvidenceSpan {
+  // private fields
+} derive(Compare, Eq)
+pub fn EvidenceSpan::end_utf8(Self) -> Int
+pub fn EvidenceSpan::episode_id(Self) -> EpisodeId
+pub fn EvidenceSpan::excerpt_digest(Self) -> Digest256?
+pub fn EvidenceSpan::new(EpisodeId, Int, Int, Digest256?) -> Self raise MemoryError
+pub fn EvidenceSpan::start_utf8(Self) -> Int
+pub fn EvidenceSpan::validate_for_body(Self, String) -> Unit raise MemoryError
+
+pub struct FactAssertion {
+  // private fields
+} derive(Eq)
+pub fn FactAssertion::confidence_basis_points(Self) -> Int
+pub fn FactAssertion::group_id(Self) -> GroupId
+pub fn FactAssertion::id(Self) -> FactId
+pub fn FactAssertion::new(FactId, GroupId, EntityId, String, FactObject, String, Timestamp, Timestamp?, Int, Provenance) -> Self raise MemoryError
+pub fn FactAssertion::object(Self) -> FactObject
+pub fn FactAssertion::predicate(Self) -> String
+pub fn FactAssertion::provenance(Self) -> Provenance
+pub fn FactAssertion::statement(Self) -> String
+pub fn FactAssertion::subject(Self) -> EntityId
+pub fn FactAssertion::valid_from(Self) -> Timestamp
+pub fn FactAssertion::valid_interval(Self) -> ValidInterval
+pub fn FactAssertion::valid_to(Self) -> Timestamp?
+
+pub struct FactId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn FactId::new(String) -> Self raise MemoryError
+pub fn FactId::value(Self) -> String
+
+pub(all) enum FactObject {
+  EntityRef(EntityId)
+  Literal(String)
+} derive(Compare, Eq)
+
+pub struct GroupId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn GroupId::new(String) -> Self raise MemoryError
+pub fn GroupId::value(Self) -> String
+
+pub struct MemoryGraph {
+  // private fields
+}
+pub fn MemoryGraph::new() -> Self
+
+pub struct Metadata {
+  // private fields
+} derive(Eq)
+pub fn Metadata::empty() -> Self
+pub fn Metadata::entries(Self) -> Array[(String, String)]
+pub fn Metadata::is_empty(Self) -> Bool
+pub fn Metadata::length(Self) -> Int
+pub fn Metadata::new(Array[(String, String)]) -> Self raise MemoryError
+
+pub struct Provenance {
+  // private fields
+} derive(Eq)
+pub fn Provenance::episode_ids(Self) -> Array[EpisodeId]
+pub fn Provenance::evidence(Self) -> Array[EvidenceSpan]
+pub fn Provenance::extractor(Self) -> String?
+pub fn Provenance::new(Array[EpisodeId], Array[EvidenceSpan], String?) -> Self raise MemoryError
+
+pub struct Timestamp {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn Timestamp::from_unix_millis(Int64) -> Self
+pub fn Timestamp::to_unix_millis(Self) -> Int64
+
+pub struct ValidInterval {
+  // private fields
+} derive(Compare, Eq, @debug.Debug)
+pub fn ValidInterval::contains(Self, Timestamp) -> Bool
+pub fn ValidInterval::end(Self) -> Timestamp?
+pub fn ValidInterval::new(Timestamp, Timestamp?) -> Self raise MemoryError
+pub fn ValidInterval::overlaps(Self, Self) -> Bool
+pub fn ValidInterval::start(Self) -> Timestamp
+
+// Type aliases
+
+// Traits

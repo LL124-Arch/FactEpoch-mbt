@@ -2,9 +2,9 @@
 
 [简体中文](README.zh-CN.md)
 
-> **Status: design baseline.** The repository currently contains the reviewed product contract and project policy. The MoonBit module, API, CLI, examples, benchmarks, and releases described below are not implemented yet.
+> **Status: foundation API available.** The portable root package now provides validated IDs, UTC Unix-millisecond timestamps, half-open intervals, canonical metadata, provenance/evidence types, domain constructors, and an empty `MemoryGraph`. Event application, bitemporal queries, journals, compaction, CLI programs, extractors, and releases are not implemented yet.
 
-FactEpoch-mbt is a planned pure-MoonBit bitemporal fact-graph kernel for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
+FactEpoch-mbt is a pure-MoonBit bitemporal fact-graph kernel under active development for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
 
 The first release is intended for applications that need answers to both of these questions:
 
@@ -13,7 +13,15 @@ The first release is intended for applications that need answers to both of thes
 
 That distinction is the reason for the project. A single `updated_at` field cannot answer both questions without erasing history.
 
-## Planned v1 contract
+The checked foundation example is in [the quickstart](docs/quickstart.mbt.md). From the repository root:
+
+```text
+moon check --target all
+moon test --target all
+moon test docs --target all
+```
+
+## v1 contract under implementation
 
 - UTC Unix millisecond timestamps and half-open valid intervals `[valid_from, valid_to)`.
 - Every query supplies both `valid_at` and `known_at`.
@@ -27,7 +35,7 @@ That distinction is the reason for the project. A single `updated_at` field cann
 - Portable core packages for `wasm`, `wasm-gc`, `js`, and `native`.
 - An offline fixture extractor plus a separately gated native OpenAI-compatible adapter.
 
-The planned public surface and its invariants are frozen in [the design contract](docs/design.md). The implementation will be test-driven; this status section will change only when commands shown here work from a clean clone.
+The public surface and its invariants are frozen in [the design contract](docs/design.md). Implemented portions are covered by tests on `wasm`, `wasm-gc`, `js`, and `native`; future-looking items above remain roadmap commitments rather than current capability claims.
 
 ## Product boundary
 
@@ -88,7 +96,7 @@ FactEpoch-mbt/
 └── .github/workflows/ci.yml
 ```
 
-There will be one `moon.mod`. The root package will own public domain types and the portable graph API, avoiding circular dependencies and re-export ambiguity.
+There is one `moon.mod`. The root package owns public domain types and the portable graph API, avoiding circular dependencies and re-export ambiguity.
 
 ## Planned command line
 

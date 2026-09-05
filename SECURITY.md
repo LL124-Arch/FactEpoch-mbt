@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-FactEpoch-mbt has no released or production-supported version. The repository is in active implementation planning, and the current documentation-only scaffold must not be treated as deployable software.
+FactEpoch-mbt has no released or production-supported version. The repository now contains a tested foundation API for identifiers, time intervals, metadata, provenance, and domain construction, but it does not yet implement the event ledger or bitemporal query engine and must not be treated as deployable software.
 
 Security support will begin with the first published release. At that point this section will identify supported version lines using actual release identifiers.
 
@@ -14,7 +14,7 @@ Include a concise impact description, affected version or commit, reproduction c
 
 ## Security boundary
 
-The planned trusted core covers deterministic validation, canonical serialization, hash-chain verification, journal replay, bitemporal queries, conflict guards, logical retraction, and non-in-place compaction. Its guarantees are deliberately narrow:
+The implemented foundation covers deterministic validation of identifiers, intervals, metadata, provenance, and domain values. The planned trusted core extends that boundary to canonical serialization, hash-chain verification, journal replay, bitemporal queries, conflict guards, logical retraction, and non-in-place compaction. Its guarantees are deliberately narrow:
 
 - A valid hash chain can reveal byte-level modification, truncation when an expected head is known, reordering, or broken ancestry.
 - It does not prove that a statement is true, that a source is trustworthy, or that the original writer was authorized.

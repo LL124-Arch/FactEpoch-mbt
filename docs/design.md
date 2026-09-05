@@ -1,6 +1,6 @@
 # FactEpoch-mbt v1 Design Contract
 
-This document freezes the intended public behavior before implementation. It is a contract to test against, not a claim that the API already exists.
+This document freezes the intended public behavior for v1. Foundation types described here are implemented; later event, query, journal, compaction, CLI, and extraction sections remain a contract to test against rather than a claim of current availability.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ FactEpoch is a deterministic, embeddable memory kernel for facts whose history m
 - **valid time**: when an assertion is true in the modeled world;
 - **known time**: when an event made that assertion available to the system.
 
-A late event may describe an old valid interval without pretending the system knew it earlier. Historical queries are implemented by replaying only events recorded at or before `known_at`, then selecting facts whose half-open valid interval contains `valid_at`.
+A late event may describe an old valid interval without pretending the system knew it earlier. The frozen query design reconstructs historical answers by replaying only events recorded at or before `known_at`, then selecting facts whose half-open valid interval contains `valid_at`; that query engine is not implemented in the foundation stage.
 
 ## Portability and ownership
 
@@ -43,11 +43,15 @@ GroupId
 Digest256
 ```
 
-Their public constructors validate a non-empty UTF-8 string with a maximum encoded size. Equality is type-specific and byte-stable. `Digest256` accepts exactly 64 lowercase hexadecimal characters and exposes no mutable bytes. The core does not generate IDs.
+Their public `new` constructors validate a non-empty UTF-8 string of at most 255 encoded bytes. Their `value` methods return immutable strings. Equality and comparison are type-specific and byte-stable. `Digest256` accepts exactly 64 lowercase hexadecimal characters and exposes no mutable bytes. The core does not generate IDs.
+
+### Canonical metadata
+
+The implementation uses an opaque `Metadata` value instead of exposing `Map` ownership or iteration order. `Metadata::new(Array[(String, String)])` copies its input, rejects empty or duplicate keys, and sorts by key. `entries` returns a defensive copy in canonical order. This is the concrete MoonBit representation of the `sorted Map[String, String]` notation used in the original design baseline.
 
 ## Public domain types
 
-The root package exposes these records and enums. Exact MoonBit field syntax will be captured in the generated interface when implemented; the names and semantic fields below are fixed for v1.
+The root package exposes these records and enums. The generated interface captures the exact implemented constructor and accessor syntax; the names and semantic fields below are fixed for v1.
 
 ### Episode
 
@@ -59,7 +63,7 @@ Episode
   source_uri: String?
   occurred_from: Timestamp?
   occurred_to: Timestamp?
-  metadata: sorted Map[String, String]
+  metadata: Metadata
 ```
 
 An episode is source material. Its optional occurrence interval does not substitute for a fact's valid interval.
@@ -73,7 +77,7 @@ Entity
   name: String
   kind: String
   summary: String?
-  metadata: sorted Map[String, String]
+  metadata: Metadata
 ```
 
 ### FactObject and FactAssertion
@@ -113,7 +117,7 @@ EvidenceSpan
   excerpt_digest: Digest256?
 ```
 
-Evidence offsets refer to UTF-8 byte offsets in the corresponding episode body. A `Provenance` value sorts and deduplicates only its own episode IDs and evidence spans; it never absorbs provenance from another authoritative fact. Every fact must reference at least one episode already visible in its group.
+Evidence offsets refer to UTF-8 byte offsets in the corresponding episode body. `EvidenceSpan::validate_for_body` rejects out-of-bounds offsets and offsets inside a multi-byte code point. A `Provenance` value copies, sorts, and deduplicates only its own episode IDs and evidence spans; it never absorbs provenance from another authoritative fact. Every evidence span must name an episode in the same provenance value. Event application will additionally require every referenced episode to be visible in the fact's group.
 
 ## Events
 

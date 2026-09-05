@@ -2,9 +2,9 @@
 
 [English](README.md)
 
-> **状态：设计基线。** 当前仓库只包含已审阅的产品契约和工程政策。下文所述 MoonBit 模块、API、CLI、示例、基准与发布物均尚未实现。
+> **状态：基础 API 已可用。** 可移植根包已经提供经过校验的 ID、UTC Unix 毫秒时间戳、半开区间、规范化元数据、来源/证据类型、领域构造器和空 `MemoryGraph`。事件应用、双时态查询、日志、压缩、CLI、抽取器与发布版本尚未实现。
 
-FactEpoch-mbt 计划成为面向 Agent 记忆的纯 MoonBit 双时态事实图谱内核。它分别记录事实在现实语义中何时成立、系统何时得知它、事实来自哪个 Episode，以及哪一个显式事件替代或撤回了它。它不是完整 Agent 框架、对话缓存、向量库或图数据库。
+FactEpoch-mbt 是一个正在开发的、面向 Agent 记忆的纯 MoonBit 双时态事实图谱内核。它分别记录事实在现实语义中何时成立、系统何时得知它、事实来自哪个 Episode，以及哪一个显式事件替代或撤回了它。它不是完整 Agent 框架、对话缓存、向量库或图数据库。
 
 首个版本要让应用能够同时回答两类问题：
 
@@ -13,7 +13,15 @@ FactEpoch-mbt 计划成为面向 Agent 记忆的纯 MoonBit 双时态事实图�
 
 这正是项目存在的理由。只有一个 `updated_at` 字段无法在不抹除历史的前提下回答这两个问题。
 
-## 计划中的 v1 契约
+[Quickstart](docs/quickstart.mbt.md) 中包含已由测试覆盖的基础示例。在仓库根目录运行：
+
+```text
+moon check --target all
+moon test --target all
+moon test docs --target all
+```
+
+## 正在实现的 v1 契约
 
 - UTC Unix 毫秒时间戳；事实有效区间采用半开区间 `[valid_from, valid_to)`。
 - 每次查询都必须给出 `valid_at` 和 `known_at`。
@@ -27,7 +35,7 @@ FactEpoch-mbt 计划成为面向 Agent 记忆的纯 MoonBit 双时态事实图�
 - 核心包支持 `wasm`、`wasm-gc`、`js`、`native`。
 - 默认提供离线 fixture 抽取器；另有严格隔离、显式启用的 native OpenAI-compatible 适配器。
 
-计划公共接口与不变量冻结在[设计契约](docs/design.md)中。实现会采用测试驱动方式；只有从干净克隆运行命令成功后，才会修改这里的状态说明。
+公共接口及其不变量冻结在[设计契约](docs/design.md)中。已实现部分在 `wasm`、`wasm-gc`、`js` 和 `native` 上都有测试；上面尚未落地的条目仍是路线承诺，而非当前能力声明。
 
 ## 产品边界
 
