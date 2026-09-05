@@ -8,6 +8,37 @@ fn require_nonempty(field : String, value : String) -> Unit raise MemoryError {
 }
 
 ///|
+fn predicate_key(predicate : String) -> String {
+  let normalized = StringBuilder()
+  let mut has_output = false
+  let mut pending_space = false
+  for char in predicate {
+    let code = char.to_int()
+    let ascii_whitespace = code == 0x20 || (code >= 0x09 && code <= 0x0d)
+    if ascii_whitespace {
+      if has_output {
+        pending_space = true
+      }
+    } else {
+      if pending_space {
+        normalized.write_char(' ')
+        pending_space = false
+      }
+      if code >= 0x41 && code <= 0x5a {
+        match (code + 0x20).to_char() {
+          Some(lowercase) => normalized.write_char(lowercase)
+          None => abort("ASCII lowercase conversion must be valid")
+        }
+      } else {
+        normalized.write_char(char)
+      }
+      has_output = true
+    }
+  }
+  normalized.to_string()
+}
+
+///|
 /// Source material that may support one or more facts.
 pub struct Episode {
   priv id : EpisodeId
@@ -170,7 +201,9 @@ pub fn FactAssertion::new(
   confidence_basis_points : Int,
   provenance : Provenance,
 ) -> FactAssertion raise MemoryError {
-  require_nonempty("predicate", predicate)
+  if predicate_key(predicate).is_empty() {
+    raise InvalidField("predicate", "must not normalize to empty")
+  }
   require_nonempty("statement", statement)
   match object {
     Literal(value) => require_nonempty("object.literal", value)

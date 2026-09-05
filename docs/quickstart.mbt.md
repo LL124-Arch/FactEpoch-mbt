@@ -1,6 +1,6 @@
 # Quickstart
 
-This example constructs source material, an entity, and a fact, then commits all three as one atomic batch without reading a clock or touching external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
+This example constructs source material, an entity, and a fact, commits all three as one atomic batch, then asks the same valid-time question immediately before and at the fact's known-time activation. It does not read a clock or touch external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
 
 ```mbt check
 ///|
@@ -82,6 +82,27 @@ test "quickstart atomically records a source-backed fact" {
     Err(_) => fail("valid quickstart batch must apply")
   }
   inspect(graph.snapshot_events().length(), content="3")
+  let valid_at = @factepoch.Timestamp::from_unix_millis(1_787_472_000_000L)
+  let filter = @factepoch.FactFilter::new(predicate=" PREFERS_LANGUAGE ")
+  let before_activation = @factepoch.FactQuery::new(
+    valid_at,
+    @factepoch.Timestamp::from_unix_millis(1_788_249_599_999L),
+    filter,
+  )
+  match graph.query(before_activation) {
+    Ok(facts) => inspect(facts.length(), content="0")
+    Err(_) => fail("valid query must succeed")
+  }
+  let at_activation = @factepoch.FactQuery::new(valid_at, recorded_at, filter)
+  match graph.query(at_activation) {
+    Ok(facts) => {
+      inspect(facts.length(), content="1")
+      inspect(facts[0].fact().statement(), content="Lin prefers MoonBit")
+      inspect(facts[0].predicate_key(), content="prefers_language")
+      inspect(facts[0].activation_event_id().value(), content="event-fact-1")
+    }
+    Err(_) => fail("valid query must succeed")
+  }
 }
 ```
 
@@ -91,4 +112,4 @@ Run it with:
 moon test docs --target all
 ```
 
-The portable in-memory graph now supports this deterministic ingestion boundary and replay. Querying by `valid_at × known_at`, supersession, and retraction remain later capabilities.
+The portable in-memory graph supports deterministic ingestion/replay and activation-only `valid_at × known_at` query, history, and diff. Supersession, retraction, forget-aware projection, and ranked search remain later capabilities.

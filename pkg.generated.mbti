@@ -16,6 +16,8 @@ pub(all) suberror MemoryError {
   InvalidEvidence(String)
   DuplicateMetadataKey(String)
   InvalidConfidence(Int)
+  InvalidLimit(Int)
+  InvalidTimeRange(String, Timestamp, Timestamp)
   InvalidSequence(Int64)
   EventIdConflict(EventId)
   StreamMismatch(String, String)
@@ -39,6 +41,16 @@ pub fn ApplyReport::created_episode_count(Self) -> Int
 pub fn ApplyReport::created_fact_count(Self) -> Int
 pub fn ApplyReport::event_count(Self) -> Int
 pub fn ApplyReport::idempotent_event_ids(Self) -> Array[EventId]
+
+pub(all) enum DiffAxis {
+  AcrossKnowledge(Timestamp, Timestamp, Timestamp)
+  AcrossValidity(Timestamp, Timestamp, Timestamp)
+} derive(Eq)
+
+pub struct DiffQuery {
+  // private fields
+}
+pub fn DiffQuery::new(DiffAxis, FactFilter) -> Self raise MemoryError
 
 pub struct Digest256 {
   // private fields
@@ -113,6 +125,19 @@ pub fn FactAssertion::valid_from(Self) -> Timestamp
 pub fn FactAssertion::valid_interval(Self) -> ValidInterval
 pub fn FactAssertion::valid_to(Self) -> Timestamp?
 
+pub struct FactDiff {
+  // private fields
+}
+pub fn FactDiff::added(Self) -> Array[FactView]
+pub fn FactDiff::removed(Self) -> Array[FactView]
+pub fn FactDiff::unchanged(Self) -> Array[FactView]
+
+pub struct FactFilter {
+  // private fields
+}
+pub fn FactFilter::all() -> Self
+pub fn FactFilter::new(group_id? : GroupId, subject? : EntityId, predicate? : String, object? : FactObject, provenance_episode? : EpisodeId) -> Self raise MemoryError
+
 pub struct FactId {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
@@ -123,6 +148,29 @@ pub(all) enum FactObject {
   EntityRef(EntityId)
   Literal(String)
 } derive(Compare, Eq)
+
+pub struct FactQuery {
+  // private fields
+}
+pub fn FactQuery::new(Timestamp, Timestamp, FactFilter, limit? : Int) -> Self raise MemoryError
+
+pub struct FactSlot {
+  // private fields
+} derive(Eq)
+pub fn FactSlot::group_id(Self) -> GroupId
+pub fn FactSlot::new(GroupId, EntityId, String) -> Self raise MemoryError
+pub fn FactSlot::predicate_key(Self) -> String
+pub fn FactSlot::subject(Self) -> EntityId
+
+pub struct FactView {
+  // private fields
+} derive(Eq)
+pub fn FactView::activation_event_id(Self) -> EventId
+pub fn FactView::activation_recorded_at(Self) -> Timestamp
+pub fn FactView::effective_valid_to(Self) -> Timestamp?
+pub fn FactView::fact(Self) -> FactAssertion
+pub fn FactView::predicate_key(Self) -> String
+pub fn FactView::score_basis_points(Self) -> Int
 
 pub struct GroupId {
   // private fields
@@ -136,6 +184,16 @@ pub(all) enum GroupReference {
   ProvenanceReference(EpisodeId)
 } derive(Eq, @debug.Debug)
 
+pub struct HistoryQuery {
+  // private fields
+}
+pub fn HistoryQuery::new(HistoryTarget, Timestamp, Timestamp, limit? : Int) -> Self raise MemoryError
+
+pub(all) enum HistoryTarget {
+  ByFactId(FactId)
+  BySlot(FactSlot)
+} derive(Eq)
+
 pub(all) enum MemoryEvent {
   RecordEpisode(Episode)
   PutEntity(Entity)
@@ -146,7 +204,10 @@ pub struct MemoryGraph {
   // private fields
 }
 pub fn MemoryGraph::apply(Self, Array[RecordedEvent]) -> Result[ApplyReport, MemoryError]
+pub fn MemoryGraph::diff(Self, DiffQuery) -> Result[FactDiff, MemoryError]
+pub fn MemoryGraph::history(Self, HistoryQuery) -> Result[Array[FactView], MemoryError]
 pub fn MemoryGraph::new() -> Self
+pub fn MemoryGraph::query(Self, FactQuery) -> Result[Array[FactView], MemoryError]
 pub fn MemoryGraph::replay(Array[RecordedEvent]) -> Result[Self, MemoryError]
 pub fn MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
 

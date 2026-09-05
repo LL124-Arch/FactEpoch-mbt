@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-> **Status: deterministic ingestion available.** The portable root package provides validated domain types plus caller-stamped `RecordEpisode`, `PutEntity`, and `AssertFact` events. `MemoryGraph::apply` validates a complete batch on staged state, publishes it atomically, and supports deterministic replay. Bitemporal queries, supersession, retraction, journals, compaction, CLI programs, extractors, and releases are not implemented yet.
+> **Status: activation-only bitemporal reads available.** The portable root package provides validated domain types, atomic caller-stamped ingestion, deterministic replay, `valid_at × known_at` query, closed-window activation history, and two-axis fact-set diff. Supersession, retraction, closure markers, journals, compaction, search, CLI programs, extractors, and releases are not implemented yet.
 
 FactEpoch-mbt is a pure-MoonBit bitemporal fact-graph kernel under active development for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
 
@@ -13,7 +13,7 @@ The first release is intended for applications that need answers to both of thes
 
 That distinction is the reason for the project. A single `updated_at` field cannot answer both questions without erasing history.
 
-The checked ingestion example is in [the quickstart](docs/quickstart.mbt.md). From the repository root:
+The checked ingestion and bitemporal-query example is in [the quickstart](docs/quickstart.mbt.md). From the repository root:
 
 ```text
 moon check --target all
@@ -25,6 +25,8 @@ moon test docs --target all
 
 - UTC Unix millisecond timestamps and half-open valid intervals `[valid_from, valid_to)`.
 - Every query supplies both `valid_at` and `known_at`.
+- Known time includes all activations at `recorded_at <= known_at`; history uses a closed activation window, and diff varies exactly one time axis.
+- Predicate filters use a documented ASCII-only case/whitespace key while preserving the raw source predicate.
 - Caller-supplied identifiers and event times in the portable core; only the CLI reads the clock and allocates monotonic sequence numbers.
 - Batch prevalidation: `MemoryGraph::apply` either accepts the complete batch or leaves the graph unchanged.
 - Idempotent replay when an existing event ID is paired with the same complete `RecordedEvent`; the same ID with any changed stream, order, time, variant, or domain payload is an error.
@@ -130,6 +132,7 @@ SHA-256 receipts can demonstrate that bytes and projections match a stated diges
 - [Known limitations](docs/limitations.md)
 - [Quickstart status](docs/quickstart.mbt.md)
 - [ADR 0001: scope and upstream](docs/decisions/0001-scope-and-upstream.md)
+- [ADR 0002: bitemporal projection](docs/decisions/0002-bitemporal-projection.md)
 
 ## Contributing and license
 

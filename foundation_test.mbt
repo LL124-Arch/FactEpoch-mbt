@@ -296,6 +296,44 @@ test "domain constructors reject malformed fields and confidence" {
 }
 
 ///|
+test "fact predicates reject normalized emptiness but retain source spelling" {
+  let (episode_id, entity_id, group_id) = sample_ids()
+  let provenance = @factepoch.Provenance::new([episode_id], [], None)
+  try
+    @factepoch.FactAssertion::new(
+      @factepoch.FactId::new("fact-whitespace-predicate"),
+      group_id,
+      entity_id,
+      " \t\r\n ",
+      Literal("value"),
+      "statement",
+      @factepoch.Timestamp::from_unix_millis(1_000L),
+      None,
+      9_000,
+      provenance,
+    )
+  catch {
+    InvalidField(field, _) => inspect(field, content="predicate")
+    _ => fail("unexpected error category")
+  } noraise {
+    _ => fail("ASCII-whitespace-only predicate must fail")
+  }
+  let fact = @factepoch.FactAssertion::new(
+    @factepoch.FactId::new("fact-spelled-predicate"),
+    group_id,
+    entity_id,
+    "  Prefers\tLANGUAGE  ",
+    Literal("MoonBit"),
+    "Alice prefers MoonBit",
+    @factepoch.Timestamp::from_unix_millis(1_000L),
+    None,
+    9_000,
+    provenance,
+  )
+  inspect(fact.predicate(), content="  Prefers\tLANGUAGE  ")
+}
+
+///|
 test "domain text fields are non-empty and occurrence bounds are coherent" {
   let (episode_id, entity_id, group_id) = sample_ids()
   let metadata = @factepoch.Metadata::empty()

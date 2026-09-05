@@ -1,6 +1,6 @@
 # FactEpoch-mbt v1 Design Contract
 
-This document freezes the intended public behavior for v1. Foundation types and atomic application of `RecordEpisode`, `PutEntity`, and `AssertFact` are implemented. Supersession, retraction, query, journal, compaction, CLI, and extraction sections remain a contract to test against rather than a claim of current availability.
+This document freezes the intended public behavior for v1. Foundation types, atomic application of `RecordEpisode`, `PutEntity`, and `AssertFact`, and activation-only bitemporal query/history/diff are implemented. Supersession, retraction, closure-aware history, journal, compaction, CLI, search, and extraction sections remain a contract to test against rather than a claim of current availability.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ FactEpoch is a deterministic, embeddable memory kernel for facts whose history m
 - **valid time**: when an assertion is true in the modeled world;
 - **known time**: when an event made that assertion available to the system.
 
-A late event may describe an old valid interval without pretending the system knew it earlier. The frozen query design reconstructs historical answers by replaying only events recorded at or before `known_at`, then selecting facts whose half-open valid interval contains `valid_at`; that query engine is not implemented in the foundation stage.
+A late event may describe an old valid interval without pretending the system knew it earlier. The implemented query takes the stream prefix recorded at or before `known_at`, rebuilds it through `MemoryGraph::replay`, then checks which half-open valid intervals contain `valid_at`. This normal replay path is authoritative for future closure and forget events as well as current activations.
 
 ## Portability and ownership
 
@@ -102,6 +102,8 @@ FactAssertion
 
 Confidence is an integer from 0 to 10,000. It affects optional scoring but never grants permission to supersede another fact.
 
+The raw predicate is retained. Structural matching derives a private key by lowercasing only ASCII `A` through `Z`, collapsing ASCII whitespace bytes `0x09` through `0x0D` and `0x20` to one trimmed space, and leaving every other Unicode scalar, underscore, and hyphen unchanged. No Unicode normalization is performed. Construction rejects a predicate whose derived key is empty.
+
 ### Provenance
 
 ```text
@@ -128,7 +130,7 @@ RecordEpisode(Episode)
 PutEntity(Entity)
 AssertFact(FactAssertion)
 SupersedeFact(new_fact: FactAssertion, old_fact_ids: Array[FactId], decision: ConflictDecision)
-RetractFact(fact_id: FactId, reason: String)
+RetractFact(fact_id: FactId, effective_at: Timestamp, reason: String)
 ApplyForgetPlan(ForgetPlan)
 ```
 
@@ -177,7 +179,7 @@ Supersession is never inferred. `SupersedeFact` must list every old fact ID and 
 
 These structural checks intentionally prevent unrelated facts from being invalidated, addressing the class of behavior described in Graphiti issue [#1728](https://github.com/getzep/graphiti/issues/1728). Fixtures for this stricter rule carry `parity_kind: documented_adaptation`.
 
-`RetractFact` closes one fact's known-time visibility without changing its valid interval or source bytes. It rejects unknown or already inactive facts.
+`SupersedeFact` leaves the old assertion unchanged and derives its effective exclusive upper valid-time bound as `min(old.valid_to, new_fact.valid_from)`, treating an absent old bound as unbounded. `RetractFact` carries an explicit `effective_at` and derives `min(old.valid_to, effective_at)` in the same way. Both closures enter known-time projection only at the closure event's own `recorded_at`. Retraction rejects unknown or already inactive facts.
 
 ## MemoryGraph public surface
 
@@ -198,15 +200,17 @@ MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
 
 ### Query DTOs
 
-`FactQuery` requires `valid_at` and `known_at`, with optional group, subject, predicate, object, provenance episode, ranked-candidate input, minimum score, and a bounded limit.
+The implemented `FactQuery` requires `valid_at`, `known_at`, a `FactFilter`, and a limit from 1 through 10,000. `FactFilter` supports optional group, subject, normalized predicate, exact object, and provenance-episode constraints. Ranked candidates and minimum score belong to the later search milestone.
 
-`HistoryQuery` requires a fact ID or a structured fact slot and a known-time range. It returns every visible version and closure marker in deterministic order.
+Every known-time boundary is evaluated by collecting events in stream order through `recorded_at <= known_at` and calling the normal replay path. Monotonic `recorded_at` permits collection to stop at the first future event. `history` replays through its inclusive upper endpoint; knowledge-axis diff replays both endpoints, while validity-axis diff replays its fixed known-time endpoint once.
+
+The implemented `HistoryQuery` requires a fact ID or a group/subject/normalized-predicate `FactSlot`, a closed known-time range, and a limit from 1 through 10,000. It currently returns first activations in that window. Closure markers join the result after explicit closure events are implemented.
 
 `DiffQuery` requires one valid-time point and two known-time points, or one known-time point and two valid-time points. `FactDiff` contains stable `added`, `removed`, and `unchanged` arrays.
 
 `NeighborQuery` requires a starting entity, `valid_at`, `known_at`, maximum BFS depth, direction (`Outgoing`, `Incoming`, or `Both`), optional predicate/group filters, and a result limit. A fact is traversable only when visible at both query times.
 
-`FactView` contains the assertion, activation event/time, optional closing event/time, a score, and a stable explanation key. Public results are sorted by descending score, descending relevant time, then ascending fact ID. Ties never depend on map iteration.
+The implemented `FactView` contains the immutable assertion, derived predicate key, first activation event/time, effective valid upper bound, and `score_basis_points`. That score equals assertion confidence in this milestone; ranked `Double` scores arrive with search. Public query, history, and diff partitions are sorted by descending score, descending `valid_from`, then ascending fact ID. Ties never depend on map iteration.
 
 `ExplainReport` contains the selected fact, source episodes and evidence, activation event, explicit supersession/retraction/forget chain, query times, score contributions, and any redaction markers. It never fabricates missing source text.
 

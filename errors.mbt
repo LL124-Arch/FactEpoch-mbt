@@ -18,6 +18,8 @@ pub(all) suberror MemoryError {
   InvalidEvidence(String)
   DuplicateMetadataKey(String)
   InvalidConfidence(Int)
+  InvalidLimit(Int)
+  InvalidTimeRange(String, Timestamp, Timestamp)
   InvalidSequence(Int64)
   EventIdConflict(EventId)
   StreamMismatch(String, String)

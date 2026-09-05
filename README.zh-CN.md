@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-> **状态：确定性写入已可用。** 可移植根包已经提供经过校验的领域类型，以及由调用方标记的 `RecordEpisode`、`PutEntity`、`AssertFact` 事件。`MemoryGraph::apply` 会在暂存状态中校验完整批次，通过后原子发布，并支持确定性回放。双时态查询、替代、撤回、日志、压缩、CLI、抽取器与发布版本尚未实现。
+> **状态：仅激活阶段的双时态读取已可用。** 可移植根包已提供领域类型、原子化调用方时间戳写入、确定性回放、`valid_at × known_at` 查询、闭区间激活历史和双轴事实集合 diff。替代、撤回、闭合标记、日志、压缩、搜索、CLI、抽取器与发布版本尚未实现。
 
 FactEpoch-mbt 是一个正在开发的、面向 Agent 记忆的纯 MoonBit 双时态事实图谱内核。它分别记录事实在现实语义中何时成立、系统何时得知它、事实来自哪个 Episode，以及哪一个显式事件替代或撤回了它。它不是完整 Agent 框架、对话缓存、向量库或图数据库。
 
@@ -13,7 +13,7 @@ FactEpoch-mbt 是一个正在开发的、面向 Agent 记忆的纯 MoonBit 双�
 
 这正是项目存在的理由。只有一个 `updated_at` 字段无法在不抹除历史的前提下回答这两个问题。
 
-[Quickstart](docs/quickstart.mbt.md) 中包含已由测试覆盖的事件写入示例。在仓库根目录运行：
+[Quickstart](docs/quickstart.mbt.md) 中包含已由测试覆盖的事件写入与双时态查询示例。在仓库根目录运行：
 
 ```text
 moon check --target all
@@ -25,6 +25,8 @@ moon test docs --target all
 
 - UTC Unix 毫秒时间戳；事实有效区间采用半开区间 `[valid_from, valid_to)`。
 - 每次查询都必须给出 `valid_at` 和 `known_at`。
+- 已知时间包含所有满足 `recorded_at <= known_at` 的激活；history 使用闭合激活窗口，diff 每次只改变一个时间轴。
+- predicate 过滤使用已记录的 ASCII 大小写/空白键，同时保留来源中的原始 predicate。
 - 可移植内核中的 ID 和事件时间由调用方提供；只有 CLI 读取时钟并分配单调序号。
 - 整批预校验：`MemoryGraph::apply` 要么接收整批事件，要么保持图状态完全不变。
 - 已存在事件 ID 只有在完整 `RecordedEvent`（stream、顺序、时间、变体和领域 payload）相同时才按幂等重放处理；任一部分不同都会报错。
@@ -130,6 +132,7 @@ SHA-256 收据能证明字节和投影与给定摘要一致，但不能认证写
 - [已知限制](docs/limitations.md)
 - [Quickstart 状态](docs/quickstart.mbt.md)
 - [ADR 0001：范围与上游](docs/decisions/0001-scope-and-upstream.md)
+- [ADR 0002：双时态投影](docs/decisions/0002-bitemporal-projection.md)
 
 ## 贡献与许可证
 
