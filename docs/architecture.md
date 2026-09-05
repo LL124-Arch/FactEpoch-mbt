@@ -35,6 +35,8 @@ Root `moon.pkg` and root `*.mbt` files contain:
 
 These files support `wasm`, `wasm-gc`, `js`, and `native`. They receive all nondeterministic inputs explicitly and contain no filesystem or HTTP behavior.
 
+The implemented slice currently ends at atomic ingestion and replay for episode, entity, and fact assertions. Query projection, explicit closure events, forgetting, search, and integrity are architectural commitments below, not hidden capabilities of the present root package.
+
 ## Event flow
 
 ```text
@@ -49,7 +51,7 @@ stage the complete batch on an isolated state copy
       +-- any error --> discard staged state; return MemoryError
       |
       v
-publish state + ApplyReport
+publish state + ApplyReport (counts and event IDs in the current slice)
       |
       v
 canonical envelope -> SHA-256 chain -> append-only JSONL
@@ -71,6 +73,8 @@ Indexes are derived accelerators. They may be rebuilt from events and never defi
 ## Determinism
 
 All observable arrays have a documented stable order. Sets are sorted before hashing or encoding. Map iteration does not enter result order, canonical JSON, state digests, or receipts. The core accepts caller-supplied IDs and timestamps instead of consulting ambient state.
+
+The in-memory graph keeps private ID-to-array-position maps for event, episode, entity, and fact lookup. An apply operation copies these indexes alongside its arrays and publishes both only after complete validation. Arrays remain the source of observable order; indexes are never iterated to produce snapshots, serialization, or query results.
 
 The compatibility corpus runs on all four core targets. Native-only packages have separate checks so a platform adapter cannot narrow the portable module accidentally.
 

@@ -10,6 +10,10 @@ All notable changes to FactEpoch-mbt will be documented in this file. The format
 - Added opaque checked identifiers, signed Unix-millisecond timestamps, and half-open valid intervals.
 - Added canonical metadata, UTF-8 evidence validation, provenance normalization, and validated episode, entity, and fact constructors.
 - Added an executable foundation quickstart and all-target tests for the public surface.
+- Added caller-stamped episode, entity, and fact events with strict stream, sequence, and recorded-time ordering.
+- Added atomic batch application, exact event idempotence, strict domain-ID conflict detection, reference/group validation, deterministic snapshots, and replay.
+- Added staged ID indexes for bounded lookup work while retaining insertion-ordered arrays as the observable event order.
+- Preserved each fact's first activation event and time in a private lifecycle record ready for explicit closure events.
 
 ### Documentation
 

@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-> **Status: foundation API available.** The portable root package now provides validated IDs, UTC Unix-millisecond timestamps, half-open intervals, canonical metadata, provenance/evidence types, domain constructors, and an empty `MemoryGraph`. Event application, bitemporal queries, journals, compaction, CLI programs, extractors, and releases are not implemented yet.
+> **Status: deterministic ingestion available.** The portable root package provides validated domain types plus caller-stamped `RecordEpisode`, `PutEntity`, and `AssertFact` events. `MemoryGraph::apply` validates a complete batch on staged state, publishes it atomically, and supports deterministic replay. Bitemporal queries, supersession, retraction, journals, compaction, CLI programs, extractors, and releases are not implemented yet.
 
 FactEpoch-mbt is a pure-MoonBit bitemporal fact-graph kernel under active development for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
 
@@ -13,7 +13,7 @@ The first release is intended for applications that need answers to both of thes
 
 That distinction is the reason for the project. A single `updated_at` field cannot answer both questions without erasing history.
 
-The checked foundation example is in [the quickstart](docs/quickstart.mbt.md). From the repository root:
+The checked ingestion example is in [the quickstart](docs/quickstart.mbt.md). From the repository root:
 
 ```text
 moon check --target all
@@ -27,7 +27,7 @@ moon test docs --target all
 - Every query supplies both `valid_at` and `known_at`.
 - Caller-supplied identifiers and event times in the portable core; only the CLI reads the clock and allocates monotonic sequence numbers.
 - Batch prevalidation: `MemoryGraph::apply` either accepts the complete batch or leaves the graph unchanged.
-- Idempotent replay for the same event ID and byte-identical payload; the same ID with a different payload is an error.
+- Idempotent replay when an existing event ID is paired with the same complete `RecordedEvent`; the same ID with any changed stream, order, time, variant, or domain payload is an error.
 - Explicit supersession and retraction. A model cannot silently invalidate a fact.
 - Episode-to-fact provenance, deterministic history, stable score/time/ID ordering, BFS, cosine scoring, and reciprocal-rank fusion.
 - Versioned canonical JSONL with SHA-256 event chaining, semantic-state digests, and artifact digests.

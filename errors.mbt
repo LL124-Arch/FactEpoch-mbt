@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
+/// A typed reference whose target belongs to the wrong isolation group.
+pub(all) enum GroupReference {
+  SubjectReference(EntityId)
+  ObjectReference(EntityId)
+  ProvenanceReference(EpisodeId)
+} derive(Eq, @debug.Debug)
+
+///|
 /// Stable validation categories returned by the portable FactEpoch core.
 pub(all) suberror MemoryError {
   InvalidIdentifier(String, String)
@@ -10,4 +18,15 @@ pub(all) suberror MemoryError {
   InvalidEvidence(String)
   DuplicateMetadataKey(String)
   InvalidConfidence(Int)
+  InvalidSequence(Int64)
+  EventIdConflict(EventId)
+  StreamMismatch(String, String)
+  SequenceNotIncreasing(Int64, Int64)
+  RecordedAtRegression(Timestamp, Timestamp)
+  EpisodeIdConflict(EpisodeId)
+  EntityIdConflict(EntityId)
+  FactIdConflict(FactId)
+  MissingEntity(EntityId)
+  MissingEpisode(EpisodeId)
+  GroupMismatch(GroupReference)
 } derive(Eq, @debug.Debug)

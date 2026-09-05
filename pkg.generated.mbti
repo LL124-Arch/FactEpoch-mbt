@@ -16,9 +16,30 @@ pub(all) suberror MemoryError {
   InvalidEvidence(String)
   DuplicateMetadataKey(String)
   InvalidConfidence(Int)
+  InvalidSequence(Int64)
+  EventIdConflict(EventId)
+  StreamMismatch(String, String)
+  SequenceNotIncreasing(Int64, Int64)
+  RecordedAtRegression(Timestamp, Timestamp)
+  EpisodeIdConflict(EpisodeId)
+  EntityIdConflict(EntityId)
+  FactIdConflict(FactId)
+  MissingEntity(EntityId)
+  MissingEpisode(EpisodeId)
+  GroupMismatch(GroupReference)
 } derive(Eq, @debug.Debug)
 
 // Types and methods
+pub struct ApplyReport {
+  // private fields
+}
+pub fn ApplyReport::accepted_event_ids(Self) -> Array[EventId]
+pub fn ApplyReport::created_entity_count(Self) -> Int
+pub fn ApplyReport::created_episode_count(Self) -> Int
+pub fn ApplyReport::created_fact_count(Self) -> Int
+pub fn ApplyReport::event_count(Self) -> Int
+pub fn ApplyReport::idempotent_event_ids(Self) -> Array[EventId]
+
 pub struct Digest256 {
   // private fields
 } derive(Compare, Eq, Hash, @debug.Debug)
@@ -109,10 +130,25 @@ pub struct GroupId {
 pub fn GroupId::new(String) -> Self raise MemoryError
 pub fn GroupId::value(Self) -> String
 
+pub(all) enum GroupReference {
+  SubjectReference(EntityId)
+  ObjectReference(EntityId)
+  ProvenanceReference(EpisodeId)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum MemoryEvent {
+  RecordEpisode(Episode)
+  PutEntity(Entity)
+  AssertFact(FactAssertion)
+} derive(Eq)
+
 pub struct MemoryGraph {
   // private fields
 }
+pub fn MemoryGraph::apply(Self, Array[RecordedEvent]) -> Result[ApplyReport, MemoryError]
 pub fn MemoryGraph::new() -> Self
+pub fn MemoryGraph::replay(Array[RecordedEvent]) -> Result[Self, MemoryError]
+pub fn MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
 
 pub struct Metadata {
   // private fields
@@ -130,6 +166,18 @@ pub fn Provenance::episode_ids(Self) -> Array[EpisodeId]
 pub fn Provenance::evidence(Self) -> Array[EvidenceSpan]
 pub fn Provenance::extractor(Self) -> String?
 pub fn Provenance::new(Array[EpisodeId], Array[EvidenceSpan], String?) -> Self raise MemoryError
+
+pub struct RecordedEvent {
+  // private fields
+} derive(Eq)
+pub fn RecordedEvent::event(Self) -> MemoryEvent
+pub fn RecordedEvent::event_id(Self) -> EventId
+pub fn RecordedEvent::new(String, Int64, EventId, Timestamp, MemoryEvent) -> Self raise MemoryError
+pub fn RecordedEvent::recorded_at(Self) -> Timestamp
+pub fn RecordedEvent::seq(Self) -> Int64
+pub fn RecordedEvent::stream_id(Self) -> String
+
+type StoredFact derive(Eq)
 
 pub struct Timestamp {
   // private fields

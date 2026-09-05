@@ -25,6 +25,8 @@ Evidence: targeted tests, `moon check --target all`, `moon test --target all`, f
 
 Outcome: events can be applied atomically and queried along valid and known time.
 
+Progress: atomic application and replay are implemented for episode, entity, and fact-assertion events. They enforce one stream, monotonic sequence/time order, exact event idempotence, strict domain identity, group-safe references, and all-or-nothing batches. Bitemporal queries and fact-closing events remain part of this checkpoint.
+
 - Add failing tests for batch rollback, idempotent event replay, and same-ID/different-payload rejection.
 - Implement episode/entity/fact events and deterministic replay.
 - Add current, historical, late-arrival, boundary, history, and diff tests.

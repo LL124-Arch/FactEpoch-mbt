@@ -1,10 +1,10 @@
 # Quickstart
 
-The foundation API is available. This example constructs validated source material, an entity, and a fact without reading a clock or touching external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
+This example constructs source material, an entity, and a fact, then commits all three as one atomic batch without reading a clock or touching external state. This Markdown file is the test source: the `docs` package compiles and executes its `mbt check` block on every supported core target.
 
 ```mbt check
 ///|
-test "foundation quickstart constructs a source-backed fact" {
+test "quickstart atomically records a source-backed fact" {
   let group = @factepoch.GroupId::new("personal")
   let episode_id = @factepoch.EpisodeId::new("episode-2026-09-05")
   let episode = @factepoch.Episode::new(
@@ -48,7 +48,40 @@ test "foundation quickstart constructs a source-backed fact" {
     .contains(@factepoch.Timestamp::from_unix_millis(1_787_472_000_000L)),
     content="true",
   )
-  let _graph = @factepoch.MemoryGraph::new()
+  let graph = @factepoch.MemoryGraph::new()
+  let recorded_at = @factepoch.Timestamp::from_unix_millis(1_788_249_600_000L)
+  let batch = [
+    @factepoch.RecordedEvent::new(
+      "quickstart",
+      1L,
+      @factepoch.EventId::new("event-episode-1"),
+      recorded_at,
+      RecordEpisode(episode),
+    ),
+    @factepoch.RecordedEvent::new(
+      "quickstart",
+      2L,
+      @factepoch.EventId::new("event-entity-1"),
+      recorded_at,
+      PutEntity(subject),
+    ),
+    @factepoch.RecordedEvent::new(
+      "quickstart",
+      3L,
+      @factepoch.EventId::new("event-fact-1"),
+      recorded_at,
+      AssertFact(fact),
+    ),
+  ]
+  match graph.apply(batch) {
+    Ok(report) => {
+      inspect(report.accepted_event_ids().length(), content="3")
+      inspect(report.created_fact_count(), content="1")
+      inspect(report.event_count(), content="3")
+    }
+    Err(_) => fail("valid quickstart batch must apply")
+  }
+  inspect(graph.snapshot_events().length(), content="3")
 }
 ```
 
@@ -58,4 +91,4 @@ Run it with:
 moon test docs --target all
 ```
 
-The graph is intentionally still empty: event application and bitemporal queries are the next capability, not a hidden part of this foundation example.
+The portable in-memory graph now supports this deterministic ingestion boundary and replay. Querying by `valid_at × known_at`, supersession, and retraction remain later capabilities.

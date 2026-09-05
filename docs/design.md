@@ -1,6 +1,6 @@
 # FactEpoch-mbt v1 Design Contract
 
-This document freezes the intended public behavior for v1. Foundation types described here are implemented; later event, query, journal, compaction, CLI, and extraction sections remain a contract to test against rather than a claim of current availability.
+This document freezes the intended public behavior for v1. Foundation types and atomic application of `RecordEpisode`, `PutEntity`, and `AssertFact` are implemented. Supersession, retraction, query, journal, compaction, CLI, and extraction sections remain a contract to test against rather than a claim of current availability.
 
 ## Purpose
 
@@ -132,15 +132,22 @@ RetractFact(fact_id: FactId, reason: String)
 ApplyForgetPlan(ForgetPlan)
 ```
 
+The current root interface exposes the first three variants. The remaining
+variants stay frozen here for later milestones and are not runtime claims.
+
 `RecordedEvent` supplies `stream_id`, `seq`, `event_id`, `recorded_at`, and the semantic event. The JSONL envelope adds chain hashes without changing those ordering fields.
 
 `PutEntity` is an idempotent upsert only when an existing entity has identical canonical content. Changing content under the same entity ID is a conflict. Entity evolution will use explicit new events rather than hidden mutation.
+
+An accepted fact is stored privately with its immutable assertion, first activation event ID, first activation `recorded_at`, and an empty closure slot reserved for explicit supersession or retraction. A later event carrying the same canonical `FactAssertion` is a semantic no-op and cannot replace that first activation metadata.
 
 ### Idempotence and atomic batches
 
 `MemoryGraph::apply` prevalidates an entire batch against a staged copy of state. If any event is invalid, the method returns `MemoryError` and publishes none of the batch. Within a successful batch, later events may reference earlier events in that batch.
 
-Reapplying an event ID with the same canonical payload is an idempotent no-op reported in `ApplyReport`. Reusing an event ID with any different payload returns `EventIdConflict`. A batch containing an internally conflicting duplicate also fails atomically.
+Reapplying an event ID with the same complete `RecordedEvent` is an idempotent no-op reported in `ApplyReport`; this identity check runs before stream and ordering checks, so an old exact event can be retried safely. Reusing an event ID with any changed stream, sequence, recorded time, variant, or domain payload returns `EventIdConflict`. A batch containing an internally conflicting duplicate also fails atomically.
+
+Reference group errors carry a typed `GroupReference`: `SubjectReference(EntityId)`, `ObjectReference(EntityId)`, or `ProvenanceReference(EpisodeId)`. Error handling therefore does not depend on role-name strings and never includes an episode body, fact statement/literal, or metadata value.
 
 ## Candidate deduplication and authoritative identity
 
@@ -312,7 +319,7 @@ Transport, timeout, HTTP status, malformed response, invalid extraction, and lim
 
 `MemoryError` has stable categories for invalid identifiers/time/intervals, missing references, endpoint/group mismatch, duplicate conflicts, event-ID conflicts, stale decisions/plans, atomic batch rejection, query limits, JSON/schema/canonicalization failures, sequence/hash failures, truncation, vector errors, I/O publication failures, extractor transport/timeout/HTTP/malformed/limit errors, and history unavailable after redaction.
 
-`ApplyReport` contains accepted event IDs, idempotent event IDs, created/updated object counts, and the resulting semantic-state digest. It is returned only for a successful atomic batch.
+`ApplyReport` currently contains defensively copied accepted and idempotent event IDs, created episode/entity/fact counts, and the resulting event count. It is returned only for a successful atomic batch. A semantic-state digest will be added only after the canonical state encoding and integrity package define the exact bytes covered; the current API does not return a placeholder digest.
 
 ## Examples that define acceptance
 
