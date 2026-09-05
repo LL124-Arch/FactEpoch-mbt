@@ -1,0 +1,22 @@
+# MoonBit build and dependency caches
+_build/
+target/
+.repos/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Generated run data; committed fixtures live under fixtures/
+.factepoch/
+var/
+data/runtime/
+data/exports/
+runs/
+coverage/
+*.log
+*.tmp
+
+# Public API summaries are review artifacts and must remain trackable.
+!**/pkg.generated.mbti
