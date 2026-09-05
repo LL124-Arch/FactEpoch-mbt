@@ -25,15 +25,15 @@ Evidence: targeted tests, `moon check --target all`, `moon test --target all`, f
 
 Outcome: events can be applied atomically and queried along valid and known time.
 
-Progress: atomic application and replay are implemented for episode, entity, and fact-assertion events. Activation-only bitemporal query, closed-window activation history, and both diff axes are also implemented with stable ordering and structural filters. Fact-closing events, closure-aware history, and explanations remain part of this checkpoint.
+Progress: atomic application and replay are implemented for episode, entity, assertion, supersession, and retraction events. Closure-aware bitemporal query, closed-window lifecycle history, both diff axes, structural conflict guards, and provenance/lifecycle explanation are implemented with stable ordering.
 
 - Add failing tests for batch rollback, idempotent event replay, and same-ID/different-payload rejection.
 - Implement episode/entity/fact events and deterministic replay.
 - Add current, historical, late-arrival, boundary, history, and diff tests.
-- Implement explicit supersession, retraction, group isolation, and provenance explanations.
+- Extend explicit lifecycle behavior only through tested, auditable event variants; forgetting remains the next separate lifecycle capability.
 - Lock Graphiti pre-ID entity-reference candidate-dedup fixtures and the issue-1728 structural adaptation.
 
-Evidence: the complete bitemporal matrix passes on all core targets and repeated replay produces the same semantic digest.
+Evidence: the complete bitemporal matrix passes on all core targets, and snapshot replay preserves query, history, diff, and explanation results. Semantic digests belong to the later journal/integrity checkpoint.
 
 ## Search checkpoint
 

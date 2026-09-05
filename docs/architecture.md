@@ -35,7 +35,7 @@ Root `moon.pkg` and root `*.mbt` files contain:
 
 These files support `wasm`, `wasm-gc`, `js`, and `native`. They receive all nondeterministic inputs explicitly and contain no filesystem or HTTP behavior.
 
-The implemented slice currently includes atomic ingestion/replay plus activation-only query, history, and diff for episode, entity, and fact assertions. Explicit closure events, closure-aware history, forgetting, search, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
+The implemented slice includes atomic ingestion/replay, explicit supersession and retraction, closure-aware query/history/diff, and fact explanation for episode, entity, and fact assertions. Forgetting, search, journals, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
 
 ## Event flow
 
@@ -68,7 +68,7 @@ Facts retain valid intervals in their assertions. Known-time visibility is deriv
 - late assertions may backfill an earlier `valid_from`, but never backdate known time before their actual `recorded_at_ms`;
 - a query takes the stream prefix with `recorded_at <= known_at`, including every sequence at the boundary millisecond, rebuilds it through the normal `MemoryGraph::replay` path, then filters half-open valid intervals at `valid_at`.
 
-The replay rule is authoritative even for the current assertion-only lifecycle; reads do not filter a graph that already contains future events. Because `recorded_at` is monotonic, prefix collection stops at the first future envelope. Normal replay rebuilds the private ID indexes, keeping the expected work linear in the prefix size while avoiding a second state-transition implementation. Future closure events derive an effective `valid_to` without mutating the stored assertion: supersession uses the earlier of the old bound and the new fact's `valid_from`, while retraction carries an explicit `effective_at` and uses the earlier of that point and the old bound. Applied forget plans hide material from normal query results but retain audit markers for history and explanation.
+The replay rule is authoritative; reads never filter a graph that already contains future events. Because `recorded_at` is monotonic, prefix collection stops at the first future envelope. Normal replay rebuilds private ID indexes with expected linear work. Closure events derive an effective `valid_to` without mutating the stored assertion: supersession uses the earlier of the old bound and the new fact's `valid_from`, while retraction carries an explicit `effective_at`. Applied forget plans will later hide material from normal query results while retaining audit markers.
 
 Indexes are derived accelerators. They may be rebuilt from events and never define independent truth.
 

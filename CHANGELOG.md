@@ -24,6 +24,10 @@ All notable changes to FactEpoch-mbt will be documented in this file. The format
 - Pinned the Graphiti semantic reference to release `0.30.1`, commit `547422865cca9fb5a82915c074d899428c145ff4`.
 - Defined repository, licensing, security, contribution, roadmap, and third-party policies.
 - Added a test-driven, outcome-based implementation plan without claiming any runtime capability.
-- Recorded the implemented projection model, ASCII predicate-key profile, and immutable future closure semantics in ADR 0002.
+- Recorded the implemented projection model, ASCII predicate-key profile, and the then-future immutable closure semantics in ADR 0002.
+- Added immutable conflict decisions, explicit supersession and retraction events, one terminal closure per fact, and atomic multi-fact structural guards.
+- Made query, closed-window history, and both diff axes closure-aware while preserving known-time prefix replay.
+- Added `MemoryGraph::explain` with visibility categories, source episodes, and a defensive, knowledge-bounded lifecycle chain.
+- Recorded the implemented terminal-closure trade-off in ADR 0003.
 
 No software version has been released.

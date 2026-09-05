@@ -11,6 +11,7 @@ pub struct ApplyReport {
   priv created_episode_count : Int
   priv created_entity_count : Int
   priv created_fact_count : Int
+  priv closed_fact_count : Int
   priv event_count : Int
 }
 
@@ -21,6 +22,7 @@ fn ApplyReport::make(
   created_episode_count : Int,
   created_entity_count : Int,
   created_fact_count : Int,
+  closed_fact_count : Int,
   event_count : Int,
 ) -> ApplyReport {
   {
@@ -29,6 +31,7 @@ fn ApplyReport::make(
     created_episode_count,
     created_entity_count,
     created_fact_count,
+    closed_fact_count,
     event_count,
   }
 }
@@ -58,6 +61,11 @@ pub fn ApplyReport::created_entity_count(self : ApplyReport) -> Int {
 ///|
 pub fn ApplyReport::created_fact_count(self : ApplyReport) -> Int {
   self.created_fact_count
+}
+
+///|
+pub fn ApplyReport::closed_fact_count(self : ApplyReport) -> Int {
+  self.closed_fact_count
 }
 
 ///|

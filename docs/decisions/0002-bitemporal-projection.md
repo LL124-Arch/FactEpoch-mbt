@@ -24,16 +24,16 @@ Predicate structure and filters use one private normalization profile:
 
 The raw predicate stays in `FactAssertion`. A predicate whose normalized key is empty is rejected. `FactView::predicate_key` and `FactSlot::predicate_key` expose the derived key without exposing the helper.
 
-`history` first replays through its inclusive `to_known_at`, then reports first activations in the closed knowledge-time window, targeted by exact `FactId` or by group, subject, and normalized predicate slot. Closure markers will join this result only when closure events exist. A knowledge-axis `diff` replays independently at both known-time endpoints. A valid-axis `diff` replays once at its fixed known time, then filters the two valid-time points. Added and unchanged views come from the right projection; removed views come from the left.
+`history` first replays through its inclusive `to_known_at`, then reports facts whose first activation or terminal closure falls in the closed knowledge-time window, targeted by exact `FactId` or by group, subject, and normalized predicate slot. A knowledge-axis `diff` replays independently at both known-time endpoints. A valid-axis `diff` replays once at its fixed known time, then filters the two valid-time points. Added and unchanged views come from the right projection; removed views come from the left.
 
-Future closure events will not mutate a stored assertion:
+Closure events do not mutate a stored assertion:
 
 - `SupersedeFact` derives the old fact's effective exclusive `valid_to` as the earlier of its original `valid_to` and the new fact's `valid_from`.
 - `RetractFact` carries an explicit `effective_at` and derives the old fact's effective exclusive `valid_to` as the earlier of its original `valid_to` and `effective_at`.
 - Each closure affects known-time projection only once its own envelope has `recorded_at <= known_at`.
-- An applied forget plan hides affected material from normal queries while history and explanation retain redaction-aware audit markers.
+- A future applied forget plan will hide affected material from normal queries while history and explanation retain redaction-aware audit markers.
 
-These future rules are frozen semantics, not claims that supersession, retraction, forgetting, or closure-aware history are implemented in this milestone.
+Supersession, retraction, and closure-aware history now implement these rules. Forgetting remains a frozen future rule.
 
 ## Consequences
 

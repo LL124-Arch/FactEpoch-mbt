@@ -1,6 +1,6 @@
 # FactEpoch-mbt v1 Design Contract
 
-This document freezes the intended public behavior for v1. Foundation types, atomic application of `RecordEpisode`, `PutEntity`, and `AssertFact`, and activation-only bitemporal query/history/diff are implemented. Supersession, retraction, closure-aware history, journal, compaction, CLI, search, and extraction sections remain a contract to test against rather than a claim of current availability.
+This document freezes the intended public behavior for v1. Foundation types, atomic application of assertion/supersession/retraction events, closure-aware bitemporal query/history/diff, and explanation are implemented. Journal, compaction, forgetting, CLI, search, and extraction sections remain a contract to test against rather than a claim of current availability.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ FactEpoch is a deterministic, embeddable memory kernel for facts whose history m
 - **valid time**: when an assertion is true in the modeled world;
 - **known time**: when an event made that assertion available to the system.
 
-A late event may describe an old valid interval without pretending the system knew it earlier. The implemented query takes the stream prefix recorded at or before `known_at`, rebuilds it through `MemoryGraph::replay`, then checks which half-open valid intervals contain `valid_at`. This normal replay path is authoritative for future closure and forget events as well as current activations.
+A late event may describe an old valid interval without pretending the system knew it earlier. The implemented query takes the stream prefix recorded at or before `known_at`, rebuilds it through `MemoryGraph::replay`, then checks which derived half-open valid intervals contain `valid_at`. This normal replay path is authoritative for current activation and closure events; future forget events will use the same rule.
 
 ## Portability and ownership
 
@@ -134,14 +134,15 @@ RetractFact(fact_id: FactId, effective_at: Timestamp, reason: String)
 ApplyForgetPlan(ForgetPlan)
 ```
 
-The current root interface exposes the first three variants. The remaining
-variants stay frozen here for later milestones and are not runtime claims.
+The current root interface exposes the first five variants, through
+`RetractFact`. `ApplyForgetPlan` stays frozen here for a later milestone and is
+not a current runtime claim.
 
 `RecordedEvent` supplies `stream_id`, `seq`, `event_id`, `recorded_at`, and the semantic event. The JSONL envelope adds chain hashes without changing those ordering fields.
 
 `PutEntity` is an idempotent upsert only when an existing entity has identical canonical content. Changing content under the same entity ID is a conflict. Entity evolution will use explicit new events rather than hidden mutation.
 
-An accepted fact is stored privately with its immutable assertion, first activation event ID, first activation `recorded_at`, and an empty closure slot reserved for explicit supersession or retraction. A later event carrying the same canonical `FactAssertion` is a semantic no-op and cannot replace that first activation metadata.
+An accepted fact is stored privately with its immutable assertion, first activation event ID, first activation `recorded_at`, and at most one terminal closure. A later assertion carrying the same canonical `FactAssertion` is a semantic no-op and cannot replace first activation metadata.
 
 ### Idempotence and atomic batches
 
@@ -174,12 +175,12 @@ Supersession is never inferred. `SupersedeFact` must list every old fact ID and 
 - predicates match under the frozen normalization profile;
 - entity-reference facts preserve the same directed endpoint structure, while literal facts preserve the same subject/predicate slot;
 - their valid intervals overlap;
-- each old fact is active immediately before the event;
+- each old fact exists and has no prior terminal closure;
 - the decision lists exactly the old IDs supplied by the event.
 
 These structural checks intentionally prevent unrelated facts from being invalidated, addressing the class of behavior described in Graphiti issue [#1728](https://github.com/getzep/graphiti/issues/1728). Fixtures for this stricter rule carry `parity_kind: documented_adaptation`.
 
-`SupersedeFact` leaves the old assertion unchanged and derives its effective exclusive upper valid-time bound as `min(old.valid_to, new_fact.valid_from)`, treating an absent old bound as unbounded. `RetractFact` carries an explicit `effective_at` and derives `min(old.valid_to, effective_at)` in the same way. Both closures enter known-time projection only at the closure event's own `recorded_at`. Retraction rejects unknown or already inactive facts.
+`SupersedeFact` leaves the old assertion unchanged and derives its effective exclusive upper valid-time bound as `min(old.valid_to, new_fact.valid_from)`, treating an absent old bound as unbounded. `RetractFact` carries an explicit `effective_at` and derives `min(old.valid_to, effective_at)` in the same way. Both closures enter known-time projection only at the closure event's own `recorded_at`. Retraction rejects unknown or already closed facts; an assertion that already ended by its own bound may still receive an auditable first closure.
 
 ## MemoryGraph public surface
 
@@ -204,7 +205,7 @@ The implemented `FactQuery` requires `valid_at`, `known_at`, a `FactFilter`, and
 
 Every known-time boundary is evaluated by collecting events in stream order through `recorded_at <= known_at` and calling the normal replay path. Monotonic `recorded_at` permits collection to stop at the first future event. `history` replays through its inclusive upper endpoint; knowledge-axis diff replays both endpoints, while validity-axis diff replays its fixed known-time endpoint once.
 
-The implemented `HistoryQuery` requires a fact ID or a group/subject/normalized-predicate `FactSlot`, a closed known-time range, and a limit from 1 through 10,000. It currently returns first activations in that window. Closure markers join the result after explicit closure events are implemented.
+The implemented `HistoryQuery` requires a fact ID or a group/subject/normalized-predicate `FactSlot`, a closed known-time range, and a limit from 1 through 10,000. It returns a fact when its first activation or terminal closure was recorded in that window, at most once per fact.
 
 `DiffQuery` requires one valid-time point and two known-time points, or one known-time point and two valid-time points. `FactDiff` contains stable `added`, `removed`, and `unchanged` arrays.
 
@@ -212,7 +213,7 @@ The implemented `HistoryQuery` requires a fact ID or a group/subject/normalized-
 
 The implemented `FactView` contains the immutable assertion, derived predicate key, first activation event/time, effective valid upper bound, and `score_basis_points`. That score equals assertion confidence in this milestone; ranked `Double` scores arrive with search. Public query, history, and diff partitions are sorted by descending score, descending `valid_from`, then ascending fact ID. Ties never depend on map iteration.
 
-`ExplainReport` contains the selected fact, source episodes and evidence, activation event, explicit supersession/retraction/forget chain, query times, score contributions, and any redaction markers. It never fabricates missing source text.
+The current `ExplainReport` contains a `FactView`, query times, visibility reason, source episodes, first activation event, and the knowledge-bounded supersession/retraction lifecycle events. Evidence rendering, forget markers, redaction markers, and ranked score contributions are future additions; the report never fabricates missing source text.
 
 ### Search helpers
 
@@ -321,9 +322,9 @@ Transport, timeout, HTTP status, malformed response, invalid extraction, and lim
 
 ## Errors and reports
 
-`MemoryError` has stable categories for invalid identifiers/time/intervals, missing references, endpoint/group mismatch, duplicate conflicts, event-ID conflicts, stale decisions/plans, atomic batch rejection, query limits, JSON/schema/canonicalization failures, sequence/hash failures, truncation, vector errors, I/O publication failures, extractor transport/timeout/HTTP/malformed/limit errors, and history unavailable after redaction.
+The current `MemoryError` categories cover core identifier, timestamp, interval, metadata, evidence and confidence validation; stream sequence/time and event/domain identity conflicts; missing or cross-group references; query limits/ranges; and explicit closure decision, duplicate-reference, already-closed, and structural-guard failures. JSON/schema/canonicalization, hash/truncation, vector, I/O, extractor, stale forget-plan, and redaction-history errors belong to later milestones.
 
-`ApplyReport` currently contains defensively copied accepted and idempotent event IDs, created episode/entity/fact counts, and the resulting event count. It is returned only for a successful atomic batch. A semantic-state digest will be added only after the canonical state encoding and integrity package define the exact bytes covered; the current API does not return a placeholder digest.
+`ApplyReport` currently contains defensively copied accepted and idempotent event IDs, created episode/entity/fact counts, `closed_fact_count`, and the resulting event count. It is returned only for a successful atomic batch. A semantic-state digest will be added only after the canonical state encoding and integrity package define the exact bytes covered; the current API does not return a placeholder digest.
 
 ## Examples that define acceptance
 

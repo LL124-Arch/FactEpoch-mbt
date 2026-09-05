@@ -5,8 +5,7 @@ struct StoredFact {
   assertion : FactAssertion
   activation_event_id : EventId
   activation_recorded_at : Timestamp
-  closure_event_id : EventId?
-  closure_recorded_at : Timestamp?
+  closure : FactClosure?
 } derive(Eq)
 
 ///|
@@ -164,6 +163,52 @@ fn validate_fact_references(
 }
 
 ///|
+fn validate_conflict_decision(
+  candidate : FactAssertion,
+  old_fact_ids : Array[FactId],
+  decision : ConflictDecision,
+) -> Result[Unit, MemoryError] {
+  if decision.action() != SupersedeExisting {
+    return Err(ConflictDecisionMismatch("action"))
+  }
+  if decision.candidate_fact_id() != candidate.id() {
+    return Err(ConflictDecisionMismatch("candidate_fact_id"))
+  }
+  if decision.prior_fact_ids() != old_fact_ids {
+    return Err(ConflictDecisionMismatch("prior_fact_ids"))
+  }
+  Ok(())
+}
+
+///|
+fn validate_supersession_structure(
+  old_fact : FactAssertion,
+  candidate : FactAssertion,
+) -> Result[Unit, MemoryError] {
+  if old_fact.group_id() != candidate.group_id() {
+    return Err(SupersessionGuardFailed(GroupGuard))
+  }
+  if old_fact.subject() != candidate.subject() {
+    return Err(SupersessionGuardFailed(SubjectGuard))
+  }
+  if predicate_key(old_fact.predicate()) != predicate_key(candidate.predicate()) {
+    return Err(SupersessionGuardFailed(PredicateGuard))
+  }
+  match (old_fact.object(), candidate.object()) {
+    (Literal(_), Literal(_)) => ()
+    (EntityRef(old_endpoint), EntityRef(new_endpoint)) =>
+      if old_endpoint != new_endpoint {
+        return Err(SupersessionGuardFailed(DirectedEndpointGuard))
+      }
+    _ => return Err(SupersessionGuardFailed(ObjectKindGuard))
+  }
+  if !old_fact.valid_interval().overlaps(candidate.valid_interval()) {
+    return Err(SupersessionGuardFailed(IntervalOverlapGuard))
+  }
+  Ok(())
+}
+
+///|
 /// Apply an event batch atomically.
 ///
 /// Validation and mutation happen against staged arrays. The graph publishes
@@ -189,6 +234,7 @@ pub fn MemoryGraph::apply(
   let mut created_episode_count = 0
   let mut created_entity_count = 0
   let mut created_fact_count = 0
+  let mut closed_fact_count = 0
   for envelope in batch {
     match find_event(staged_events, staged_event_index, envelope.event_id()) {
       Some(existing) if existing == envelope => {
@@ -253,10 +299,93 @@ pub fn MemoryGraph::apply(
               assertion: fact,
               activation_event_id: envelope.event_id(),
               activation_recorded_at: envelope.recorded_at(),
-              closure_event_id: None,
-              closure_recorded_at: None,
+              closure: None,
             })
             created_fact_count += 1
+          }
+        }
+      SupersedeFact(candidate, old_fact_ids, decision) => {
+        match validate_conflict_decision(candidate, old_fact_ids, decision) {
+          Err(error) => return Err(error)
+          Ok(_) => ()
+        }
+        match find_fact(staged_facts, staged_fact_index, candidate.id()) {
+          Some(existing) if existing.assertion != candidate =>
+            return Err(FactIdConflict(candidate.id()))
+          Some(existing) if existing.closure is Some(_) =>
+            return Err(FactAlreadyClosed(candidate.id()))
+          _ => ()
+        }
+        match
+          validate_fact_references(
+            candidate, staged_episodes, staged_episode_index, staged_entities, staged_entity_index,
+          ) {
+          Err(error) => return Err(error)
+          Ok(_) => ()
+        }
+        for old_fact_id in old_fact_ids {
+          match find_fact(staged_facts, staged_fact_index, old_fact_id) {
+            None => return Err(MissingFact(old_fact_id))
+            Some(existing) if existing.closure is Some(_) =>
+              return Err(FactAlreadyClosed(old_fact_id))
+            Some(existing) =>
+              match
+                validate_supersession_structure(existing.assertion, candidate) {
+                Err(error) => return Err(error)
+                Ok(_) => ()
+              }
+          }
+        }
+        if find_fact(staged_facts, staged_fact_index, candidate.id()) is None {
+          staged_fact_index.set(candidate.id(), staged_facts.length())
+          staged_facts.push({
+            assertion: candidate,
+            activation_event_id: envelope.event_id(),
+            activation_recorded_at: envelope.recorded_at(),
+            closure: None,
+          })
+          created_fact_count += 1
+        }
+        for old_fact_id in old_fact_ids {
+          let position = staged_fact_index[old_fact_id]
+          let existing = staged_facts[position]
+          staged_facts[position] = {
+            assertion: existing.assertion,
+            activation_event_id: existing.activation_event_id,
+            activation_recorded_at: existing.activation_recorded_at,
+            closure: Some(
+              FactClosure::make(
+                envelope.event_id(),
+                envelope.recorded_at(),
+                candidate.valid_from(),
+                SupersededBy(candidate.id(), decision),
+              ),
+            ),
+          }
+          closed_fact_count += 1
+        }
+      }
+      RetractFact(fact_id, effective_at, reason) =>
+        match find_fact(staged_facts, staged_fact_index, fact_id) {
+          None => return Err(MissingFact(fact_id))
+          Some(existing) if existing.closure is Some(_) =>
+            return Err(FactAlreadyClosed(fact_id))
+          Some(existing) => {
+            let position = staged_fact_index[fact_id]
+            staged_facts[position] = {
+              assertion: existing.assertion,
+              activation_event_id: existing.activation_event_id,
+              activation_recorded_at: existing.activation_recorded_at,
+              closure: Some(
+                FactClosure::make(
+                  envelope.event_id(),
+                  envelope.recorded_at(),
+                  effective_at,
+                  Retracted(reason),
+                ),
+              ),
+            }
+            closed_fact_count += 1
           }
         }
     }
@@ -284,6 +413,7 @@ pub fn MemoryGraph::apply(
       created_episode_count,
       created_entity_count,
       created_fact_count,
+      closed_fact_count,
       self.events.length(),
     ),
   )
@@ -304,5 +434,5 @@ pub fn MemoryGraph::replay(
 ///|
 /// Return accepted events in stream order as a defensive array.
 pub fn MemoryGraph::snapshot_events(self : MemoryGraph) -> Array[RecordedEvent] {
-  self.events.copy()
+  self.events.map(clone_recorded_event)
 }

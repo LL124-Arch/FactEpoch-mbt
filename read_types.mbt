@@ -118,7 +118,8 @@ pub(all) enum HistoryTarget {
 } derive(Eq)
 
 ///|
-/// A closed knowledge-time activation window.
+/// A closed knowledge-time lifecycle-change window. A first activation or a
+/// terminal closure at either endpoint is included.
 pub struct HistoryQuery {
   priv target : HistoryTarget
   priv from_known_at : Timestamp
@@ -187,6 +188,7 @@ pub struct FactView {
   priv activation_event_id : EventId
   priv activation_recorded_at : Timestamp
   priv effective_valid_to : Timestamp?
+  priv closure : FactClosure?
   priv score_basis_points : Int
 } derive(Eq)
 
@@ -211,10 +213,18 @@ pub fn FactView::activation_recorded_at(self : FactView) -> Timestamp {
 }
 
 ///|
-/// Return the effective exclusive upper valid-time bound. It currently equals
-/// the assertion bound; explicit closure events will be projected here later.
+/// Return the derived exclusive upper valid-time bound: the earlier of the
+/// assertion end and the terminal-closure cutoff. It may be at or before
+/// `valid_from`, representing an empty derived interval without constructing an
+/// invalid `ValidInterval`.
 pub fn FactView::effective_valid_to(self : FactView) -> Timestamp? {
   self.effective_valid_to
+}
+
+///|
+/// Return the first and only terminal lifecycle transition, when known.
+pub fn FactView::closure(self : FactView) -> FactClosure? {
+  self.closure
 }
 
 ///|
@@ -243,4 +253,53 @@ pub fn FactDiff::removed(self : FactDiff) -> Array[FactView] {
 ///|
 pub fn FactDiff::unchanged(self : FactDiff) -> Array[FactView] {
   self.unchanged.copy()
+}
+
+///|
+/// A provenance and lifecycle explanation for one known fact.
+pub struct ExplainReport {
+  priv view : FactView
+  priv valid_at : Timestamp
+  priv known_at : Timestamp
+  priv visibility : FactVisibility
+  priv source_episodes : Array[Episode]
+  priv activation_event : RecordedEvent
+  priv lifecycle_events : Array[RecordedEvent]
+}
+
+///|
+pub fn ExplainReport::view(self : ExplainReport) -> FactView {
+  self.view
+}
+
+///|
+pub fn ExplainReport::valid_at(self : ExplainReport) -> Timestamp {
+  self.valid_at
+}
+
+///|
+pub fn ExplainReport::known_at(self : ExplainReport) -> Timestamp {
+  self.known_at
+}
+
+///|
+pub fn ExplainReport::visibility(self : ExplainReport) -> FactVisibility {
+  self.visibility
+}
+
+///|
+pub fn ExplainReport::source_episodes(self : ExplainReport) -> Array[Episode] {
+  self.source_episodes.copy()
+}
+
+///|
+pub fn ExplainReport::activation_event(self : ExplainReport) -> RecordedEvent {
+  clone_recorded_event(self.activation_event)
+}
+
+///|
+pub fn ExplainReport::lifecycle_events(
+  self : ExplainReport,
+) -> Array[RecordedEvent] {
+  self.lifecycle_events.map(clone_recorded_event)
 }

@@ -4,7 +4,7 @@ This page records claims FactEpoch does not make.
 
 ## Current status
 
-The repository is a design baseline. There is no buildable package, CLI, published Mooncakes artifact, performance result, or compatibility fixture yet.
+The repository contains a buildable, tested portable core for domain values, event replay, explicit terminal closures, bitemporal reads, and explanations. There is no CLI, published Mooncakes artifact, performance result, or compatibility fixture yet.
 
 ## Version-one limits
 

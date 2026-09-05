@@ -103,6 +103,64 @@ test "quickstart atomically records a source-backed fact" {
     }
     Err(_) => fail("valid query must succeed")
   }
+  let replacement = @factepoch.FactAssertion::new(
+    @factepoch.FactId::new("fact-language-2"),
+    group,
+    subject.id(),
+    "prefers_language",
+    Literal("Rust"),
+    "Lin now prefers Rust",
+    @factepoch.Timestamp::from_unix_millis(1_787_558_400_000L),
+    None,
+    9_000,
+    provenance,
+  )
+  let decision = @factepoch.ConflictDecision::new(
+    "Lin",
+    "later direct correction",
+    replacement.id(),
+    [fact.id()],
+    SupersedeExisting,
+  )
+  let learned_later = @factepoch.Timestamp::from_unix_millis(1_788_336_000_000L)
+  match
+    graph.apply([
+      @factepoch.RecordedEvent::new(
+        "quickstart",
+        4L,
+        @factepoch.EventId::new("event-supersede-1"),
+        learned_later,
+        SupersedeFact(replacement, [fact.id()], decision),
+      ),
+    ]) {
+    Ok(report) => inspect(report.closed_fact_count(), content="1")
+    Err(_) => fail("valid supersession must apply")
+  }
+  let after_correction = @factepoch.FactQuery::new(
+    @factepoch.Timestamp::from_unix_millis(1_787_558_400_000L),
+    learned_later,
+    filter,
+  )
+  match graph.query(after_correction) {
+    Ok(facts) => {
+      inspect(facts.length(), content="1")
+      inspect(facts[0].fact().statement(), content="Lin now prefers Rust")
+    }
+    Err(_) => fail("closure-aware query must succeed")
+  }
+  match
+    graph.explain(
+      fact.id(),
+      @factepoch.Timestamp::from_unix_millis(1_787_558_400_000L),
+      learned_later,
+    ) {
+    Ok(report) =>
+      inspect(
+        report.visibility() == EndedBySupersession(replacement.id()),
+        content="true",
+      )
+    Err(_) => fail("known closed fact must remain explainable")
+  }
 }
 ```
 
@@ -112,4 +170,4 @@ Run it with:
 moon test docs --target all
 ```
 
-The portable in-memory graph supports deterministic ingestion/replay and activation-only `valid_at × known_at` query, history, and diff. Supersession, retraction, forget-aware projection, and ranked search remain later capabilities.
+The portable in-memory graph supports deterministic ingestion/replay, explicit supersession and retraction, closure-aware `valid_at × known_at` query/history/diff, and explanation. Forget-aware projection and ranked search remain later capabilities.

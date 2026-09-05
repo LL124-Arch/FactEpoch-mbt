@@ -53,7 +53,7 @@ Literal candidates and deterministic tie-breaking beyond the pinned behavior are
 
 ## Directly adapted files
 
-No Graphiti source has been translated into the current design-only baseline. If a future file contains translated or structurally derived implementation, its leading comment must include:
+No Graphiti implementation source has been translated into the current code. The conflict decision and structural guards are an independent MoonBit implementation labeled `documented_adaptation`. If a future file contains translated or structurally derived implementation, its leading comment must include:
 
 ```text
 SPDX-License-Identifier: Apache-2.0

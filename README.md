@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-> **Status: activation-only bitemporal reads available.** The portable root package provides validated domain types, atomic caller-stamped ingestion, deterministic replay, `valid_at × known_at` query, closed-window activation history, and two-axis fact-set diff. Supersession, retraction, closure markers, journals, compaction, search, CLI programs, extractors, and releases are not implemented yet.
+> **Status: explicit fact lifecycle and bitemporal reads available.** The portable root package provides atomic caller-stamped ingestion, deterministic replay, guarded supersession, retraction, closure-aware `valid_at × known_at` query/history/diff, and provenance/lifecycle explanation. Journals, compaction, forgetting, search, CLI programs, extractors, and releases are not implemented yet.
 
 FactEpoch-mbt is a pure-MoonBit bitemporal fact-graph kernel under active development for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
 
@@ -25,12 +25,13 @@ moon test docs --target all
 
 - UTC Unix millisecond timestamps and half-open valid intervals `[valid_from, valid_to)`.
 - Every query supplies both `valid_at` and `known_at`.
-- Known time includes all activations at `recorded_at <= known_at`; history uses a closed activation window, and diff varies exactly one time axis.
+- Known time includes every event at `recorded_at <= known_at`; history uses a closed lifecycle-change window, and diff varies exactly one time axis.
 - Predicate filters use a documented ASCII-only case/whitespace key while preserving the raw source predicate.
 - Caller-supplied identifiers and event times in the portable core; only the CLI reads the clock and allocates monotonic sequence numbers.
 - Batch prevalidation: `MemoryGraph::apply` either accepts the complete batch or leaves the graph unchanged.
 - Idempotent replay when an existing event ID is paired with the same complete `RecordedEvent`; the same ID with any changed stream, order, time, variant, or domain payload is an error.
 - Explicit supersession and retraction. A model cannot silently invalidate a fact.
+- Immutable assertions plus one auditable terminal closure per fact; effective validity is derived without rewriting source data.
 - Episode-to-fact provenance, deterministic history, stable score/time/ID ordering, BFS, cosine scoring, and reciprocal-rank fusion.
 - Versioned canonical JSONL with SHA-256 event chaining, semantic-state digests, and artifact digests.
 - Logical forgetting through a frozen plan, followed by optional non-in-place preserve or redact compaction.
@@ -133,6 +134,7 @@ SHA-256 receipts can demonstrate that bytes and projections match a stated diges
 - [Quickstart status](docs/quickstart.mbt.md)
 - [ADR 0001: scope and upstream](docs/decisions/0001-scope-and-upstream.md)
 - [ADR 0002: bitemporal projection](docs/decisions/0002-bitemporal-projection.md)
+- [ADR 0003: explicit terminal fact closure](docs/decisions/0003-explicit-terminal-fact-closure.md)
 
 ## Contributing and license
 

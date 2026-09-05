@@ -83,6 +83,5 @@ test "equal fact replay preserves the first activation envelope" {
     graph.facts[0].activation_recorded_at.to_unix_millis(),
     content="1000",
   )
-  inspect(graph.facts[0].closure_event_id == None, content="true")
-  inspect(graph.facts[0].closure_recorded_at == None, content="true")
+  inspect(graph.facts[0].closure == None, content="true")
 }

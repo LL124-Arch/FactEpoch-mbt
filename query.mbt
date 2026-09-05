@@ -29,12 +29,26 @@ fn fact_matches_filter(fact : FactAssertion, filter : FactFilter) -> Bool {
 ///|
 fn stored_fact_view(stored : StoredFact) -> FactView {
   let fact = stored.assertion
+  let effective_valid_to = match (fact.valid_to(), stored.closure) {
+    (None, None) => None
+    (Some(asserted), None) => Some(asserted)
+    (None, Some(closure)) => Some(closure.effective_at())
+    (Some(asserted), Some(closure)) =>
+      Some(
+        if asserted <= closure.effective_at() {
+          asserted
+        } else {
+          closure.effective_at()
+        },
+      )
+  }
   {
     fact,
     predicate_key: predicate_key(fact.predicate()),
     activation_event_id: stored.activation_event_id,
     activation_recorded_at: stored.activation_recorded_at,
-    effective_valid_to: fact.valid_to(),
+    effective_valid_to,
+    closure: stored.closure,
     score_basis_points: fact.confidence_basis_points(),
   }
 }
@@ -81,9 +95,16 @@ fn filter_at_valid(
 ) -> Array[FactView] {
   let visible : Array[FactView] = []
   for stored in projected.facts {
-    if stored.assertion.valid_interval().contains(valid_at) &&
+    let view = stored_fact_view(stored)
+    let after_start = valid_at >= stored.assertion.valid_from()
+    let before_end = match view.effective_valid_to() {
+      None => true
+      Some(end) => valid_at < end
+    }
+    if after_start &&
+      before_end &&
       fact_matches_filter(stored.assertion, filter) {
-      visible.push(stored_fact_view(stored))
+      visible.push(view)
     }
   }
   visible.sort_by(compare_fact_view)
@@ -133,8 +154,8 @@ pub fn MemoryGraph::query(
 }
 
 ///|
-/// Replay through the upper bound, then return activations in the closed window.
-/// Closure transitions join this history in the conflict milestone.
+/// Replay through the upper bound, then return lifecycle changes in the closed
+/// knowledge-time window. A fact changed twice in the window is returned once.
 pub fn MemoryGraph::history(
   self : MemoryGraph,
   query : HistoryQuery,
@@ -144,7 +165,16 @@ pub fn MemoryGraph::history(
     Ok(projected) => {
       let matches : Array[FactView] = []
       for stored in projected.facts {
-        if stored.activation_recorded_at >= query.from_known_at &&
+        let activation_in_window = stored.activation_recorded_at >=
+          query.from_known_at &&
+          stored.activation_recorded_at <= query.to_known_at
+        let closure_in_window = match stored.closure {
+          Some(closure) =>
+            closure.recorded_at() >= query.from_known_at &&
+            closure.recorded_at() <= query.to_known_at
+          None => false
+        }
+        if (activation_in_window || closure_in_window) &&
           history_target_matches(stored.assertion, query.target) {
           matches.push(stored_fact_view(stored))
         }
@@ -221,4 +251,81 @@ pub fn MemoryGraph::diff(
     }
   }
   Ok({ added, removed, unchanged })
+}
+
+///|
+fn fact_visibility(stored : StoredFact, valid_at : Timestamp) -> FactVisibility {
+  let fact = stored.assertion
+  if valid_at < fact.valid_from() {
+    return BeforeValidFrom
+  }
+  match fact.valid_to() {
+    Some(asserted_end) if valid_at >= asserted_end =>
+      match stored.closure {
+        Some(closure) if closure.effective_at() < asserted_end => ()
+        _ => return EndedByAssertion
+      }
+    _ => ()
+  }
+  match stored.closure {
+    Some(closure) if valid_at >= closure.effective_at() =>
+      match closure.cause() {
+        SupersededBy(candidate, _) => EndedBySupersession(candidate)
+        Retracted(_) => EndedByRetraction
+      }
+    _ => Visible
+  }
+}
+
+///|
+/// Explain one fact using only lifecycle and provenance events known at the
+/// requested knowledge boundary. Facts not yet known are indistinguishable
+/// from unknown identifiers.
+pub fn MemoryGraph::explain(
+  self : MemoryGraph,
+  fact_id : FactId,
+  valid_at : Timestamp,
+  known_at : Timestamp,
+) -> Result[ExplainReport, MemoryError] {
+  let projected = match project_at_known(self, known_at) {
+    Err(error) => return Err(error)
+    Ok(value) => value
+  }
+  let stored = match find_fact(projected.facts, projected.fact_index, fact_id) {
+    None => return Err(MissingFact(fact_id))
+    Some(value) => value
+  }
+  let activation_event = match
+    find_event(
+      projected.events,
+      projected.event_index,
+      stored.activation_event_id,
+    ) {
+    None => return Err(MissingFact(fact_id))
+    Some(value) => value
+  }
+  let source_episodes : Array[Episode] = []
+  for episode_id in stored.assertion.provenance().episode_ids() {
+    match
+      find_episode(projected.episodes, projected.episode_index, episode_id) {
+      Some(episode) => source_episodes.push(episode)
+      None => return Err(MissingEpisode(episode_id))
+    }
+  }
+  let lifecycle_events : Array[RecordedEvent] = []
+  for envelope in projected.events {
+    if envelope.event_id() == stored.activation_event_id ||
+      envelope.mentions_fact(fact_id) {
+      lifecycle_events.push(clone_recorded_event(envelope))
+    }
+  }
+  Ok({
+    view: stored_fact_view(stored),
+    valid_at,
+    known_at,
+    visibility: fact_visibility(stored, valid_at),
+    source_episodes,
+    activation_event: clone_recorded_event(activation_event),
+    lifecycle_events,
+  })
 }

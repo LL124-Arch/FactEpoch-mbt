@@ -8,7 +8,7 @@
 - Upstream license: Apache License 2.0
 - Upstream copyright notice used by this project: `Copyright 2024, Zep Software, Inc.`
 
-The current design-only baseline contains no copied, vendored, or translated Graphiti implementation source and has no Graphiti runtime dependency. It records the source now because selected deterministic data-model, time, pre-ID entity-reference candidate deduplication, and ranking behavior is planned for migration.
+The current implementation contains no copied, vendored, or translated Graphiti source and has no Graphiti runtime dependency. Its independently written conflict and structural-guard behavior is recorded as a `documented_adaptation`; selected deterministic pre-ID candidate deduplication and ranking behavior remains planned for later migration.
 
 Every future file that is translated from or structurally derived from Graphiti source must include this leading notice in the appropriate comment syntax:
 

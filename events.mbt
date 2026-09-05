@@ -3,13 +3,48 @@
 ///|
 /// A deterministic mutation accepted by the in-memory graph.
 ///
-/// Supersession, retraction, and forgetting are intentionally introduced by
-/// later milestones instead of being implied by an assertion.
+/// Supersession and retraction are explicit terminal lifecycle changes;
+/// forgetting is introduced by a later milestone.
 pub(all) enum MemoryEvent {
   RecordEpisode(Episode)
   PutEntity(Entity)
   AssertFact(FactAssertion)
+  SupersedeFact(FactAssertion, Array[FactId], ConflictDecision)
+  RetractFact(FactId, Timestamp, String)
 } derive(Eq)
+
+///|
+fn normalize_memory_event(event : MemoryEvent) -> MemoryEvent raise MemoryError {
+  match event {
+    RecordEpisode(episode) => RecordEpisode(episode)
+    PutEntity(entity) => PutEntity(entity)
+    AssertFact(fact) => AssertFact(fact)
+    SupersedeFact(candidate, old_fact_ids, decision) => {
+      let normalized = normalized_fact_id_set(old_fact_ids, "old_fact_ids")
+      if normalized.contains(candidate.id()) {
+        raise ConflictDecisionMismatch("candidate_in_old_fact_ids")
+      }
+      SupersedeFact(candidate, normalized, decision)
+    }
+    RetractFact(fact_id, effective_at, reason) => {
+      require_nonempty("reason", reason)
+      RetractFact(fact_id, effective_at, reason)
+    }
+  }
+}
+
+///|
+fn clone_memory_event(event : MemoryEvent) -> MemoryEvent {
+  match event {
+    RecordEpisode(episode) => RecordEpisode(episode)
+    PutEntity(entity) => PutEntity(entity)
+    AssertFact(fact) => AssertFact(fact)
+    SupersedeFact(candidate, old_fact_ids, decision) =>
+      SupersedeFact(candidate, old_fact_ids.copy(), decision)
+    RetractFact(fact_id, effective_at, reason) =>
+      RetractFact(fact_id, effective_at, reason)
+  }
+}
 
 ///|
 /// A caller-stamped event in stream order.
@@ -34,7 +69,13 @@ pub fn RecordedEvent::new(
   if seq <= 0L {
     raise InvalidSequence(seq)
   }
-  { stream_id, seq, event_id, recorded_at, event }
+  {
+    stream_id,
+    seq,
+    event_id,
+    recorded_at,
+    event: normalize_memory_event(event),
+  }
 }
 
 ///|
@@ -59,5 +100,29 @@ pub fn RecordedEvent::recorded_at(self : RecordedEvent) -> Timestamp {
 
 ///|
 pub fn RecordedEvent::event(self : RecordedEvent) -> MemoryEvent {
-  self.event
+  clone_memory_event(self.event)
+}
+
+///|
+fn clone_recorded_event(event : RecordedEvent) -> RecordedEvent {
+  {
+    stream_id: event.stream_id,
+    seq: event.seq,
+    event_id: event.event_id,
+    recorded_at: event.recorded_at,
+    event: clone_memory_event(event.event),
+  }
+}
+
+///|
+/// Match explicit lifecycle participation without exposing or copying payload.
+/// First activation is checked separately because repeated equal assertions are
+/// semantic no-ops rather than lifecycle changes.
+fn RecordedEvent::mentions_fact(self : RecordedEvent, fact_id : FactId) -> Bool {
+  match self.event {
+    SupersedeFact(candidate, old_fact_ids, _) =>
+      candidate.id() == fact_id || old_fact_ids.contains(fact_id)
+    RetractFact(target, _, _) => target == fact_id
+    _ => false
+  }
 }
