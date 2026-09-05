@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-> **Status: explicit fact lifecycle and bitemporal reads available.** The portable root package provides atomic caller-stamped ingestion, deterministic replay, guarded supersession, retraction, closure-aware `valid_at × known_at` query/history/diff, and provenance/lifecycle explanation. Journals, compaction, forgetting, search, CLI programs, extractors, and releases are not implemented yet.
+> **Status: fact lifecycle, bitemporal reads, and pre-ID candidate deduplication are available.** The portable root package provides atomic caller-stamped ingestion, deterministic replay, guarded closure, `valid_at × known_at` reads, provenance explanation, and the pinned Graphiti candidate helper. Journals, compaction, forgetting, ranked search, CLI programs, extractors, and releases are not implemented yet.
 
 FactEpoch-mbt is a pure-MoonBit bitemporal fact-graph kernel under active development for agent memory. It records when a fact is valid in the modeled world, when the system learned it, which episode supplied it, and which explicit event replaced or retracted it. The kernel is deliberately smaller than a complete agent framework, conversation cache, vector store, or graph database.
 
@@ -33,6 +33,7 @@ moon test docs --target all
 - Explicit supersession and retraction. A model cannot silently invalidate a fact.
 - Immutable assertions plus one auditable terminal closure per fact; effective validity is derived without rewriting source data.
 - Episode-to-fact provenance, deterministic history, stable score/time/ID ordering, BFS, cosine scoring, and reciprocal-rank fusion.
+- Pre-ID entity-reference candidate matching preserves first retention while unioning every episode source as an explicit FactEpoch adaptation; literal candidates pass through.
 - Versioned canonical JSONL with SHA-256 event chaining, semantic-state digests, and artifact digests.
 - Logical forgetting through a frozen plan, followed by optional non-in-place preserve or redact compaction.
 - Portable core packages for `wasm`, `wasm-gc`, `js`, and `native`.
@@ -63,11 +64,11 @@ These are scope comparisons based on the linked package pages, not quality judgm
 
 ## Selective Graphiti migration
 
-The semantic reference is [Graphiti](https://github.com/getzep/graphiti) `0.30.1` at commit [`547422865cca9fb5a82915c074d899428c145ff4`](https://github.com/getzep/graphiti/tree/547422865cca9fb5a82915c074d899428c145ff4). FactEpoch will selectively translate deterministic data-model, temporal, pre-ID candidate-deduplication, and ranking behavior from Python into idiomatic MoonBit. Upstream-exact dedup is limited to group-scoped entity-reference candidates using directed endpoints and normalized statement; authoritative `FactId` values are never silently merged. FactEpoch is not a full port and will not offer drop-in API compatibility.
+The semantic reference is [Graphiti](https://github.com/getzep/graphiti) `0.30.1` at commit [`547422865cca9fb5a82915c074d899428c145ff4`](https://github.com/getzep/graphiti/tree/547422865cca9fb5a82915c074d899428c145ff4). The implemented pre-ID helper matches entity-reference candidates by directed endpoints and `statement.lower()` followed by Python Unicode `\s+` collapse/strip. Its exact profile is CPython `3.12.14` with UCD `15.0.0`; it does not casefold or normalize NFC/NFD. FactEpoch adds explicit group isolation, stable member records, sorted episode-source union, and literal pass-through as documented adaptations. Entity-reference outputs therefore expose both exact and adaptation labels; literals expose only adaptation. Authoritative `FactId` values are never inputs to this helper and are never silently merged.
 
 Graphiti issue [#1728](https://github.com/getzep/graphiti/issues/1728) documents an unrelated-fact invalidation failure mode. FactEpoch therefore requires superseded facts to match the same group, subject, and predicate/endpoint structure. That stricter behavior is recorded as `documented_adaptation`, not represented as exact upstream parity.
 
-No Graphiti implementation source is present in this baseline. Future translated files must carry the header policy in [THIRD_PARTY.md](THIRD_PARTY.md), and parity fixtures must name the upstream commit and whether they are `exact_upstream` or `documented_adaptation`.
+The translated files carry the attribution header required by [THIRD_PARTY.md](THIRD_PARTY.md). Python is fixture-generation and oracle tooling only, not a runtime dependency; committed fixtures name both the upstream commit and the fixed runtime profile.
 
 ## Target repository layout
 

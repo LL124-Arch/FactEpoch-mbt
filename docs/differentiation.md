@@ -41,6 +41,8 @@ The kernel is intended to serve several domains without embedding domain rules:
 
 Expansion happens through application schemas, ranked-candidate producers, and storage adapters rather than by weakening the temporal contract.
 
+The implemented Graphiti candidate helper is an interoperability boundary, not the product thesis: it prepares extracted entity-reference candidates before authoritative IDs and time are allocated while preserving every Episode source as an explicit adaptation.
+
 ## Re-evaluation rule
 
 If a maintained Mooncakes package is found to expose the six core criteria, the project will document whether to collaborate, depend on it, narrow scope further, or stop duplicative work. The README will not preserve a differentiation claim contradicted by current evidence.

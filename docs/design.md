@@ -154,9 +154,13 @@ Reference group errors carry a typed `GroupReference`: `SubjectReference(EntityI
 
 ## Candidate deduplication and authoritative identity
 
-Graphiti-compatible deduplication happens before official IDs are allocated. An `exact_upstream` helper processes entity-reference candidates within one group-scoped candidate set. Its key contains only the directed subject endpoint, directed object endpoint, and Graphiti-normalized statement. Predicate/relation, valid interval, and provenance are not part of that upstream key. The helper retains the first candidate and unions then deduplicates its episode candidate references exactly as the pinned fixture specifies.
+Graphiti-compatible deduplication happens before official IDs are allocated. For entity-reference candidates, the upstream-comparable key contains the directed subject endpoint, directed object endpoint, and Graphiti-normalized statement. Predicate/relation, confidence, valid interval, and provenance are not key fields. Normalization is frozen to Graphiti `0.30.1` at the pinned commit when run on CPython `3.12.14` with UCD `15.0.0`: Python `str.lower()`, then Unicode `re` `\s+` collapse and strip. It is not casefolding and does not perform NFC/NFD normalization.
 
-Literal-candidate behavior and any deterministic tie-break not specified by the pinned Graphiti behavior are `documented_adaptation`, never `exact_upstream`. The compatibility fixture is authoritative if host-language text behavior differs.
+Graphiti retains the first candidate in a matching class and does not union Episode references. FactEpoch preserves first retention but also records member candidate IDs in encounter order and unions/sorts/deduplicates Episode references so provenance is not lost. That union is `documented_adaptation`, as is including `GroupId` directly in the operational key rather than relying on an already group-scoped caller batch.
+
+Because those behaviors coexist, each entity-reference result carries the fixed, deduplicated label sequence `[ExactUpstream, DocumentedAdaptation]`; a literal result carries `[DocumentedAdaptation]`. `parity_kinds()` returns a defensive copy. No result labels explicit group isolation as upstream behavior.
+
+Literal candidates pass through without merging in v1 and are `documented_adaptation`. The compatibility fixtures and their fixed runtime profile are authoritative; FactEpoch does not claim parity with every Python or Unicode version.
 
 After a caller allocates `FactAssertion.id`, identity is strict and no candidate merge rule applies. Reusing the same `FactId` requires a byte-identical canonical assertion; any difference, including provenance, returns `FactIdConflict`. Separate `FactId` values remain separate facts and proceed through explicit conflict, parallel-admission, or supersession rules. `MemoryGraph` never silently merges their assertions or provenance.
 

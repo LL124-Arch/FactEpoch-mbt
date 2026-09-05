@@ -6,3 +6,5 @@
 *.md text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.generated.mbt linguist-generated=true
+*.generated_wbtest.mbt linguist-generated=true

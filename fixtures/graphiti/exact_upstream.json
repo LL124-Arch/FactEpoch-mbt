@@ -1,0 +1,76 @@
+{
+  "fixture_schema": "factepoch.graphiti-candidate-dedup/v1",
+  "parity_kind": "exact_upstream",
+  "upstream": {
+    "repository": "https://github.com/getzep/graphiti",
+    "version": "0.30.1",
+    "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+    "normalization_source": {
+      "path": "graphiti_core/utils/maintenance/dedup_helpers.py",
+      "symbol": "_normalize_string_exact"
+    },
+    "dedup_source": {
+      "path": "graphiti_core/utils/maintenance/edge_operations.py",
+      "symbol": "resolve_extracted_edges"
+    }
+  },
+  "runtime_profile": {
+    "implementation": "CPython",
+    "version": "3.12.14",
+    "ucd_version": "15.0.0"
+  },
+  "normalization_cases": [
+    { "name": "ascii-space", "input": "  USES\tMOONBIT  ", "expected": "uses moonbit" },
+    { "name": "python-whitespace", "input": "a\u00a0\u2007\u0085\u001cb", "expected": "a b" },
+    { "name": "dotted-capital-i", "input": "\u0130", "expected": "i\u0307" },
+    { "name": "capital-sharp-s", "input": "\u1e9e", "expected": "\u00df" },
+    { "name": "single-capital-sigma", "input": "\u03a3", "expected": "\u03c3" },
+    { "name": "final-sigma", "input": "\u039f\u03a3", "expected": "\u03bf\u03c2" },
+    { "name": "final-sigma-ignorable", "input": "\u039f\u0301\u03a3\u0301", "expected": "\u03bf\u0301\u03c2\u0301" },
+    { "name": "medial-sigma", "input": "\u039f\u03a3\u0391", "expected": "\u03bf\u03c3\u03b1" },
+    { "name": "medial-sigma-ignorable", "input": "\u039f\u0301\u03a3\u0301\u0391", "expected": "\u03bf\u0301\u03c3\u0301\u03b1" },
+    { "name": "punctuation-terminates", "input": "\u039f\u03a3.", "expected": "\u03bf\u03c2." },
+    { "name": "step-two-lower-run", "input": "\u0100\u0102\u0104", "expected": "\u0101\u0103\u0105" },
+    { "name": "non-bmp-lower", "input": "\ud801\udc00", "expected": "\ud801\udc28" },
+    { "name": "nfc-preserved", "input": "\u00e9", "expected": "\u00e9" },
+    { "name": "no-nfc", "input": "e\u0301", "expected": "e\u0301" }
+  ],
+  "dedup_cases": [
+    {
+      "name": "first-retained-directed-entity-edge",
+      "candidates": [
+        {
+          "candidate_id": "first",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "first predicate",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": " SAME\tFACT ",
+          "confidence_basis_points": 2000,
+          "episode_ids": ["episode-a"]
+        },
+        {
+          "candidate_id": "duplicate",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "different predicate",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": "same fact",
+          "confidence_basis_points": 9000,
+          "episode_ids": ["episode-b"]
+        },
+        {
+          "candidate_id": "reverse",
+          "group_id": "group-a",
+          "subject": "b",
+          "predicate": "first predicate",
+          "object": { "kind": "entity_ref", "entity_id": "a" },
+          "statement": "same fact",
+          "confidence_basis_points": 2000,
+          "episode_ids": ["episode-a"]
+        }
+      ],
+      "expected_retained_candidate_ids": ["first", "reverse"]
+    }
+  ]
+}

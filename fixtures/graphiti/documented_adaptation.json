@@ -1,0 +1,144 @@
+{
+  "fixture_schema": "factepoch.graphiti-candidate-dedup/v1",
+  "parity_kind": "documented_adaptation",
+  "upstream": {
+    "repository": "https://github.com/getzep/graphiti",
+    "version": "0.30.1",
+    "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+    "normalization_source": {
+      "path": "graphiti_core/utils/maintenance/dedup_helpers.py",
+      "symbol": "_normalize_string_exact"
+    },
+    "dedup_source": {
+      "path": "graphiti_core/utils/maintenance/edge_operations.py",
+      "symbol": "resolve_extracted_edges"
+    }
+  },
+  "runtime_profile": {
+    "implementation": "CPython",
+    "version": "3.12.14",
+    "ucd_version": "15.0.0"
+  },
+  "cases": [
+    {
+      "name": "preserve-provenance",
+      "reason": "Graphiti retains the first batch candidate without unioning its Episode references; FactEpoch preserves every candidate source.",
+      "candidates": [
+        {
+          "candidate_id": "first",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "first predicate",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": " SAME\tFACT ",
+          "confidence_basis_points": 2000,
+          "episode_ids": ["episode-b"]
+        },
+        {
+          "candidate_id": "duplicate",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "different predicate",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": "same fact",
+          "confidence_basis_points": 9000,
+          "episode_ids": ["episode-a", "episode-b"]
+        }
+      ],
+      "expected": {
+        "outputs": [
+          {
+            "retained_candidate_id": "first",
+            "member_candidate_ids": ["first", "duplicate"],
+            "episode_ids": ["episode-a", "episode-b"],
+            "parity_kinds": ["exact_upstream", "documented_adaptation"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "literal-pass-through",
+      "reason": "The v1 compatibility key is defined only for directed entity-reference candidates.",
+      "candidates": [
+        {
+          "candidate_id": "literal-a",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "has color",
+          "object": { "kind": "literal", "value": "blue" },
+          "statement": "Color is blue",
+          "confidence_basis_points": 7000,
+          "episode_ids": ["episode-a"]
+        },
+        {
+          "candidate_id": "literal-b",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "has color",
+          "object": { "kind": "literal", "value": "blue" },
+          "statement": "COLOR IS BLUE",
+          "confidence_basis_points": 8000,
+          "episode_ids": ["episode-b"]
+        }
+      ],
+      "expected": {
+        "outputs": [
+          {
+            "retained_candidate_id": "literal-a",
+            "member_candidate_ids": ["literal-a"],
+            "episode_ids": ["episode-a"],
+            "parity_kinds": ["documented_adaptation"]
+          },
+          {
+            "retained_candidate_id": "literal-b",
+            "member_candidate_ids": ["literal-b"],
+            "episode_ids": ["episode-b"],
+            "parity_kinds": ["documented_adaptation"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "explicit-group-isolation",
+      "reason": "FactEpoch includes GroupId in its operational key instead of relying on a caller-scoped batch.",
+      "candidates": [
+        {
+          "candidate_id": "group-a-candidate",
+          "group_id": "group-a",
+          "subject": "a",
+          "predicate": "uses",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": "same fact",
+          "confidence_basis_points": 7000,
+          "episode_ids": ["episode-a"]
+        },
+        {
+          "candidate_id": "group-b-candidate",
+          "group_id": "group-b",
+          "subject": "a",
+          "predicate": "uses",
+          "object": { "kind": "entity_ref", "entity_id": "b" },
+          "statement": "SAME FACT",
+          "confidence_basis_points": 7000,
+          "episode_ids": ["episode-b"]
+        }
+      ],
+      "expected": {
+        "outputs": [
+          {
+            "retained_candidate_id": "group-a-candidate",
+            "member_candidate_ids": ["group-a-candidate"],
+            "episode_ids": ["episode-a"],
+            "parity_kinds": ["exact_upstream", "documented_adaptation"]
+          },
+          {
+            "retained_candidate_id": "group-b-candidate",
+            "member_candidate_ids": ["group-b-candidate"],
+            "episode_ids": ["episode-b"],
+            "parity_kinds": ["exact_upstream", "documented_adaptation"]
+          }
+        ]
+      }
+    }
+  ]
+}

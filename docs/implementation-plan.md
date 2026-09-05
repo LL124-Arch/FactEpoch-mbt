@@ -25,13 +25,13 @@ Evidence: targeted tests, `moon check --target all`, `moon test --target all`, f
 
 Outcome: events can be applied atomically and queried along valid and known time.
 
-Progress: atomic application and replay are implemented for episode, entity, assertion, supersession, and retraction events. Closure-aware bitemporal query, closed-window lifecycle history, both diff axes, structural conflict guards, and provenance/lifecycle explanation are implemented with stable ordering.
+Progress: atomic application and replay are implemented for episode, entity, assertion, supersession, and retraction events. Closure-aware bitemporal query, closed-window lifecycle history, both diff axes, structural conflict guards, and provenance/lifecycle explanation are implemented with stable ordering. The pre-ID Graphiti candidate helper, fixed Unicode profile, strict exact/adaptation fixtures, generated MoonBit vectors, and provenance-preserving materialization through apply/query/explain are also implemented.
 
 - Add failing tests for batch rollback, idempotent event replay, and same-ID/different-payload rejection.
 - Implement episode/entity/fact events and deterministic replay.
 - Add current, historical, late-arrival, boundary, history, and diff tests.
 - Extend explicit lifecycle behavior only through tested, auditable event variants; forgetting remains the next separate lifecycle capability.
-- Lock Graphiti pre-ID entity-reference candidate-dedup fixtures and the issue-1728 structural adaptation.
+- Maintain Graphiti pre-ID entity-reference candidate-dedup fixtures and the issue-1728 structural adaptation.
 
 Evidence: the complete bitemporal matrix passes on all core targets, and snapshot replay preserves query, history, diff, and explanation results. Semantic digests belong to the later journal/integrity checkpoint.
 
@@ -99,7 +99,7 @@ Outcome: a clean clone supplies reproducible evidence for `v0.1.0`.
 - Finish English and Chinese documentation, source mapping, limitations, changelog, CI, and security review.
 - Run Ubuntu `moon check --target all`, `moon test --target all`, `moon check --fmt`, `moon info --target all`, native build, README/quickstart checks, Python fixture drift, and `moon publish --dry-run`.
 - Run native CLI and failure-injection tests on Ubuntu, Windows, and macOS.
-- From a clean clone, create `docs/release-audit.md` recording public repository visibility, remote URL, default branch/remote HEAD, license and attribution, commit authorship, file/line counts by production/test/example category excluding generated files, CI, examples, dry-run publication, Mooncakes page, and installation smoke test.
+- From a clean clone, create `docs/release-audit.md` recording public repository visibility, remote URL, default branch/remote HEAD, license and attribution, commit authorship, file/line counts by handwritten production/test/example category, separate generated production/test counts, CI, examples, dry-run publication, Mooncakes page, and installation smoke test.
 - Correct every failed audit item and rerun the full audit before tagging `v0.1.0`, creating a GitHub Release, or publishing to Mooncakes.
 
 The competition application is an external readiness checkpoint: at submission time the repository must have at least ten meaningful commits if that remains the official requirement. This is verified, not manufactured. Proposal wording, personal information, community enrollment, and form submission remain the participant's work.

@@ -17,6 +17,11 @@ All notable changes to FactEpoch-mbt will be documented in this file. The format
 - Added activation-only bitemporal query with group, subject, normalized predicate, exact object, and provenance-episode filters.
 - Added closed-window activation history by fact identity or normalized fact slot, plus diffs across known time or valid time.
 - Added stable confidence/valid-time/fact-ID ordering, bounded read limits, defensive result arrays, and replay-equivalent projections.
+- Added opaque pre-ID candidate values, deterministic Graphiti-compatible entity-reference matching, and caller-controlled fact materialization.
+- Preserved every duplicate candidate's Episode sources as a documented adaptation while retaining the first candidate's fact fields.
+- Added a generated CPython 3.12.14/UCD 15.0.0 lowercase profile, exact/adaptation fixtures, and Python drift checks without adding a runtime dependency.
+- Generated MoonBit parity tests directly from strictly validated fixtures, including contextual sigma, compressed-run gaps, non-BMP lowercase, and all pinned whitespace data.
+- Made result parity compositional: entity-reference candidates report both exact upstream behavior and explicit group/provenance adaptations, while literals report adaptation only.
 
 ### Documentation
 

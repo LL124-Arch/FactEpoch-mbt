@@ -4,7 +4,7 @@ This page records claims FactEpoch does not make.
 
 ## Current status
 
-The repository contains a buildable, tested portable core for domain values, event replay, explicit terminal closures, bitemporal reads, and explanations. There is no CLI, published Mooncakes artifact, performance result, or compatibility fixture yet.
+The repository contains a buildable, tested portable core for domain values, event replay, explicit terminal closures, bitemporal reads, explanations, and pre-ID candidate deduplication. Pinned Graphiti fixtures and Python drift tools are present. There is no CLI, published Mooncakes artifact, performance result, ranked retrieval, journal, or compaction implementation yet.
 
 ## Version-one limits
 
@@ -13,6 +13,7 @@ The repository contains a buildable, tested portable core for domain values, eve
 - BFS is bounded and intended for local neighborhoods, not unbounded graph analytics.
 - Cosine and RRF operate on caller-provided data; FactEpoch does not create embeddings.
 - Graphiti support is selective and fixture-scoped, not API-compatible or drop-in.
+- Unicode compatibility is limited to CPython `3.12.14` with UCD `15.0.0`; no claim is made for every Graphiti/Python/Unicode combination, and NFC/NFD remain distinct.
 - Valid time is supplied by the caller or an untrusted extractor candidate; the kernel validates structure, not truth.
 - A confidence score is evidence metadata, not an automatic conflict decision.
 - Dynamic ontologies, communities, MCP, REST, Web UI, streaming extraction, tool calling, provider discovery, and multi-provider SDK behavior are excluded.

@@ -3,9 +3,13 @@ Copyright 2026 LL124-Arch
 
 This product is licensed under the Apache License, Version 2.0.
 
-Selected behavior is planned to be translated and modified from Graphiti 0.30.1
-at commit 547422865cca9fb5a82915c074d899428c145ff4.
+Selected candidate normalization and deduplication behavior is translated and
+modified from Graphiti 0.30.1 at commit
+547422865cca9fb5a82915c074d899428c145ff4.
 Graphiti copyright 2024, Zep Software, Inc.
+
+Generated Unicode tables are derived from the Unicode Character Database 15.0.0.
+Copyright © 1991-2026 Unicode, Inc. Licensed under Unicode License V3.
 
 See THIRD_PARTY.md for the exact upstream scope and adapted-file policy.
 Graphiti and Zep Software, Inc. do not endorse FactEpoch-mbt.

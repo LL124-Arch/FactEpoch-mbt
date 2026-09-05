@@ -8,7 +8,7 @@
 - Upstream license: Apache License 2.0
 - Upstream copyright notice used by this project: `Copyright 2024, Zep Software, Inc.`
 
-The current implementation contains no copied, vendored, or translated Graphiti source and has no Graphiti runtime dependency. Its independently written conflict and structural-guard behavior is recorded as a `documented_adaptation`; selected deterministic pre-ID candidate deduplication and ranking behavior remains planned for later migration.
+`graphiti_normalize.mbt`, `graphiti_candidate_dedup.mbt`, and the development-only Python oracle translate, modify, or directly reproduce the pinned pre-ID entity-edge normalization/deduplication behavior. Graphiti is not a runtime dependency. FactEpoch's episode-reference union, literal pass-through, explicit group isolation, and conflict structural guards are recorded as `documented_adaptation`; ranking remains planned.
 
 Every future file that is translated from or structurally derived from Graphiti source must include this leading notice in the appropriate comment syntax:
 
@@ -20,9 +20,22 @@ Copyright 2024, Zep Software, Inc.
 Translated and modified for MoonBit in 2026.
 ```
 
+Development-only Python oracles use the same attribution with a final line describing the file as an adapted fixture oracle rather than MoonBit production code.
+
 The same change must add the upstream path and destination path to [docs/upstream.md](docs/upstream.md). Compatibility fixtures must identify the upstream symbol and use `exact_upstream` or `documented_adaptation` honestly.
 
 Names and trademarks belong to their owners. Reference to Graphiti does not imply affiliation or endorsement.
+
+## Unicode Character Database
+
+- Data profile: Unicode Character Database `15.0.0`
+- Retrieved: 2026-09-05
+- License source: [unicode.org/license.txt](https://www.unicode.org/license.txt)
+- Copyright: `Copyright © 1991-2026 Unicode, Inc.`
+- License: Unicode License V3; full text at [`third_party/unicode/LICENSE.txt`](third_party/unicode/LICENSE.txt)
+- Generated destination: `graphiti_unicode_tables.generated.mbt`
+
+The generated table reproduces the lowercase, contextual-property, and 29-whitespace-scalar behavior of the pinned CPython oracle profile. Its header carries `SPDX-FileCopyrightText` and `Unicode-3.0`. The project does not distribute CPython source or binaries. Generated production rows and generated fixture tests are kept separate from handwritten MoonBit and reported as separate LOC categories.
 
 ## MoonBit dependencies
 

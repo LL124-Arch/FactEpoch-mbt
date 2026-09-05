@@ -6,6 +6,7 @@ import {
 }
 
 // Values
+pub fn deduplicate_candidates(Array[CandidateFact]) -> CandidateDedupReport raise MemoryError
 
 // Errors
 pub(all) suberror MemoryError {
@@ -20,6 +21,7 @@ pub(all) suberror MemoryError {
   InvalidTimeRange(String, Timestamp, Timestamp)
   InvalidSequence(Int64)
   EventIdConflict(EventId)
+  DuplicateCandidateId(CandidateId)
   StreamMismatch(String, String)
   SequenceNotIncreasing(Int64, Int64)
   RecordedAtRegression(Timestamp, Timestamp)
@@ -48,6 +50,33 @@ pub fn ApplyReport::created_fact_count(Self) -> Int
 pub fn ApplyReport::event_count(Self) -> Int
 pub fn ApplyReport::idempotent_event_ids(Self) -> Array[EventId]
 
+pub struct CandidateDedupReport {
+  // private fields
+}
+pub fn CandidateDedupReport::candidates(Self) -> Array[DeduplicatedCandidate]
+pub fn CandidateDedupReport::collapsed_count(Self) -> Int
+pub fn CandidateDedupReport::input_count(Self) -> Int
+pub fn CandidateDedupReport::output_count(Self) -> Int
+
+pub struct CandidateFact {
+  // private fields
+} derive(Eq)
+pub fn CandidateFact::candidate_id(Self) -> CandidateId
+pub fn CandidateFact::confidence_basis_points(Self) -> Int
+pub fn CandidateFact::episode_ids(Self) -> Array[EpisodeId]
+pub fn CandidateFact::group_id(Self) -> GroupId
+pub fn CandidateFact::new(CandidateId, GroupId, EntityId, String, FactObject, String, Int, Array[EpisodeId]) -> Self raise MemoryError
+pub fn CandidateFact::object(Self) -> FactObject
+pub fn CandidateFact::predicate(Self) -> String
+pub fn CandidateFact::statement(Self) -> String
+pub fn CandidateFact::subject(Self) -> EntityId
+
+pub struct CandidateId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn CandidateId::new(String) -> Self raise MemoryError
+pub fn CandidateId::value(Self) -> String
+
 pub(all) enum ConflictAction {
   RejectCandidate
   SupersedeExisting
@@ -63,6 +92,15 @@ pub fn ConflictDecision::candidate_fact_id(Self) -> FactId
 pub fn ConflictDecision::new(String, String, FactId, Array[FactId], ConflictAction) -> Self raise MemoryError
 pub fn ConflictDecision::prior_fact_ids(Self) -> Array[FactId]
 pub fn ConflictDecision::rationale(Self) -> String
+
+pub struct DeduplicatedCandidate {
+  // private fields
+} derive(Eq)
+pub fn DeduplicatedCandidate::episode_ids(Self) -> Array[EpisodeId]
+pub fn DeduplicatedCandidate::materialize(Self, FactId, Timestamp, Timestamp?, Array[EvidenceSpan], String?) -> FactAssertion raise MemoryError
+pub fn DeduplicatedCandidate::member_candidate_ids(Self) -> Array[CandidateId]
+pub fn DeduplicatedCandidate::parity_kinds(Self) -> Array[ParityKind]
+pub fn DeduplicatedCandidate::retained_candidate(Self) -> CandidateFact
 
 pub(all) enum DiffAxis {
   AcrossKnowledge(Timestamp, Timestamp, Timestamp)
@@ -277,6 +315,11 @@ pub fn Metadata::entries(Self) -> Array[(String, String)]
 pub fn Metadata::is_empty(Self) -> Bool
 pub fn Metadata::length(Self) -> Int
 pub fn Metadata::new(Array[(String, String)]) -> Self raise MemoryError
+
+pub(all) enum ParityKind {
+  ExactUpstream
+  DocumentedAdaptation
+} derive(Eq)
 
 pub struct Provenance {
   // private fields

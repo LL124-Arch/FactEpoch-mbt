@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-> **状态：显式事实生命周期与双时态读取已可用。** 可移植根包已提供原子化调用方时间戳写入、确定性回放、受结构守卫约束的替代、撤回、闭包感知的 `valid_at × known_at` 查询/history/diff，以及来源与生命周期解释。日志、压缩、遗忘、搜索、CLI、抽取器与发布版本尚未实现。
+> **状态：事实生命周期、双时态读取与正式 ID 前候选去重已可用。** 可移植根包已提供原子写入、确定性回放、受守卫约束的事实终止、`valid_at × known_at` 读取、来源解释，以及固定 Graphiti 版本的候选兼容层。日志、压缩、遗忘、排序检索、CLI、抽取器与发布版本尚未实现。
 
 FactEpoch-mbt 是一个正在开发的、面向 Agent 记忆的纯 MoonBit 双时态事实图谱内核。它分别记录事实在现实语义中何时成立、系统何时得知它、事实来自哪个 Episode，以及哪一个显式事件替代或撤回了它。它不是完整 Agent 框架、对话缓存、向量库或图数据库。
 
@@ -33,6 +33,7 @@ moon test docs --target all
 - 替代与撤回必须显式发生，模型不能静默令事实失效。
 - 断言保持不可变，每个事实最多一个可审计终止闭包；有效期上界由闭包派生，而不重写来源断言。
 - 保留 Episode 到事实的来源链、确定性历史、按分数/时间/ID 的稳定排序，以及 BFS、余弦评分、RRF。
+- 正式 ID 分配前，实体引用候选保留首项，并以明确的 FactEpoch 适配合并所有 Episode 来源；literal 候选逐项保留。
 - 版本化 canonical JSONL、SHA-256 事件链、语义状态摘要和产物摘要。
 - 先冻结遗忘计划，再逻辑遗忘；随后可选用非原地 preserve 或 redact 压缩。
 - 核心包支持 `wasm`、`wasm-gc`、`js`、`native`。
@@ -63,11 +64,11 @@ Mooncakes 已经存在有价值的记忆、Agent、检索和向量存储项目�
 
 ## 选择性迁移 Graphiti
 
-语义参考固定为 [Graphiti](https://github.com/getzep/graphiti) `0.30.1`、commit [`547422865cca9fb5a82915c074d899428c145ff4`](https://github.com/getzep/graphiti/tree/547422865cca9fb5a82915c074d899428c145ff4)。FactEpoch 会把其中确定性的数据模型、时间、正式 ID 分配前的候选去重与排序行为选择性迁移为惯用 MoonBit。上游精确去重仅适用于同一 group 内、按有向端点与规范化 statement 比较的实体引用候选；正式 `FactId` 绝不会被静默合并。FactEpoch 不是完整移植，也不承诺 drop-in API 兼容。
+语义参考固定为 [Graphiti](https://github.com/getzep/graphiti) `0.30.1`、commit [`547422865cca9fb5a82915c074d899428c145ff4`](https://github.com/getzep/graphiti/tree/547422865cca9fb5a82915c074d899428c145ff4)。已实现的正式 ID 前 helper 按有向端点，以及 `statement.lower()` 后执行 Python Unicode `\s+` 折叠/去边界空白来匹配实体引用候选；精确运行时配置固定为 CPython `3.12.14` 与 UCD `15.0.0`，不做 casefold 或 NFC/NFD 规范化。显式 group 隔离、稳定成员记录、Episode 来源并集和 literal 直通均属于有文档的 FactEpoch 适配，因此实体引用结果同时暴露 exact 与 adaptation 标签，literal 只暴露 adaptation。正式 `FactId` 不进入这个 helper，也绝不会被静默合并。
 
 Graphiti issue [#1728](https://github.com/getzep/graphiti/issues/1728) 记录了无关事实被错误失效的风险。FactEpoch 因此要求被替代事实属于同一 group，并匹配 subject 与 predicate/端点结构。这个更严格的行为会标记为 `documented_adaptation`，不会伪装成上游精确对齐。
 
-当前基线不包含 Graphiti 实现源码。后续翻译文件必须遵守 [THIRD_PARTY.md](THIRD_PARTY.md) 中的文件头政策；对照 fixture 必须写明上游 commit，以及属于 `exact_upstream` 还是 `documented_adaptation`。
+翻译文件遵守 [THIRD_PARTY.md](THIRD_PARTY.md) 的归因文件头。Python 只用于生成 fixture 与 oracle 漂移检查，不是运行时依赖；已提交 fixture 同时固定上游 commit 和 Python/Unicode 配置。
 
 ## 目标仓库布局
 

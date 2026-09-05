@@ -27,6 +27,7 @@ Root `moon.pkg` and root `*.mbt` files contain:
 
 - opaque IDs and `Timestamp`;
 - `Episode`, `Entity`, `FactObject`, `FactAssertion`, and `Provenance`;
+- pre-ID `CandidateFact` values, pinned Graphiti normalization, deterministic candidate deduplication, and materialization;
 - `MemoryEvent`, validation, atomic application, and replay;
 - bitemporal query, history, diff, neighbors, and explain;
 - explicit conflict/supersession and retraction;
@@ -35,7 +36,7 @@ Root `moon.pkg` and root `*.mbt` files contain:
 
 These files support `wasm`, `wasm-gc`, `js`, and `native`. They receive all nondeterministic inputs explicitly and contain no filesystem or HTTP behavior.
 
-The implemented slice includes atomic ingestion/replay, explicit supersession and retraction, closure-aware query/history/diff, and fact explanation for episode, entity, and fact assertions. Forgetting, search, journals, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
+The implemented slice includes atomic ingestion/replay, explicit supersession and retraction, closure-aware query/history/diff, fact explanation, and pre-ID candidate deduplication. Forgetting, ranked search, journals, and integrity remain architectural commitments below, not hidden capabilities of the present root package.
 
 ## Event flow
 
@@ -76,7 +77,11 @@ Indexes are derived accelerators. They may be rebuilt from events and never defi
 
 All observable arrays have a documented stable order. Sets are sorted before hashing or encoding. Map iteration does not enter result order, canonical JSON, state digests, or receipts. The core accepts caller-supplied IDs and timestamps instead of consulting ambient state.
 
-Predicate structure uses an ASCII-only key: lowercase `A` through `Z`, collapse and trim whitespace bytes `0x09` through `0x0D` and `0x20`, and preserve all other Unicode, underscore, and hyphen characters. Source predicates remain unchanged and no Unicode normalization is implied.
+Predicate structure uses an ASCII-only key: lowercase `A` through `Z`, collapse and trim whitespace bytes `0x09` through `0x0D` and `0x20`, and preserve all other Unicode, underscore, and hyphen characters. Source predicates remain unchanged.
+
+Graphiti candidate statements deliberately use a different compatibility profile: CPython `3.12.14`/UCD `15.0.0` `str.lower()` followed by Python Unicode `\s+` collapse/strip. Generated lowercase, contextual-casing, and all 29 whitespace scalars keep that behavior portable across MoonBit's four targets. The generator validates fixed table counts and fully expands every compressed table back to the runtime-derived source set. Contextual final sigma is computed with linear forward/backward state; Map values are only looked up, never iterated for result order. Neither profile performs NFC/NFD normalization.
+
+`graphiti_fixture_vectors.generated_wbtest.mbt` is regenerated from the two JSON fixtures by the strict Python oracle, so MoonBit parity assertions and fixture values cannot drift independently. `.gitattributes` marks both generated MoonBit artifacts for repository tooling. Release LOC reporting lists generated production tables and generated tests separately from handwritten source and tests.
 
 The in-memory graph keeps private ID-to-array-position maps for event, episode, entity, and fact lookup. An apply operation copies these indexes alongside its arrays and publishes both only after complete validation. Arrays remain the source of observable order; indexes are never iterated to produce snapshots, serialization, or query results.
 

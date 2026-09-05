@@ -22,6 +22,7 @@ pub(all) suberror MemoryError {
   InvalidTimeRange(String, Timestamp, Timestamp)
   InvalidSequence(Int64)
   EventIdConflict(EventId)
+  DuplicateCandidateId(CandidateId)
   StreamMismatch(String, String)
   SequenceNotIncreasing(Int64, Int64)
   RecordedAtRegression(Timestamp, Timestamp)

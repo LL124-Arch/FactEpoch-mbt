@@ -39,6 +39,24 @@ pub fn EventId::value(self : EventId) -> String {
 }
 
 ///|
+/// An opaque identifier for an extraction candidate before fact allocation.
+pub struct CandidateId {
+  priv value : String
+} derive(Eq, Compare, Hash, @debug.Debug)
+
+///|
+/// Validate and construct a candidate identifier.
+pub fn CandidateId::new(value : String) -> CandidateId raise MemoryError {
+  { value: checked_identifier("CandidateId", value) }
+}
+
+///|
+/// Return the immutable textual value.
+pub fn CandidateId::value(self : CandidateId) -> String {
+  self.value
+}
+
+///|
 /// An opaque caller-supplied episode identifier.
 pub struct EpisodeId {
   priv value : String
