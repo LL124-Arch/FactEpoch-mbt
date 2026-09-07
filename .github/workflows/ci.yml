@@ -1,0 +1,55 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MOONBIT_VERSION: "0.10.9+6e6c44045"
+
+jobs:
+  all-targets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hustcer/setup-moonbit@v1.22
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ env.MOONBIT_VERSION }}
+          core-version: ${{ env.MOONBIT_VERSION }}
+      - name: Check, test, and run the story
+        run: |
+          moon check --target all --warn-list +73
+          moon test --target all
+          for target in wasm wasm-gc js native; do
+            moon run examples/preference_shift --target "$target"
+          done
+      - name: Keep interfaces and package honest
+        run: |
+          moon info --target all
+          moon check --fmt
+          git diff --exit-code
+          moon package --list
+
+  native-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hustcer/setup-moonbit@v1.22
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ env.MOONBIT_VERSION }}
+          core-version: ${{ env.MOONBIT_VERSION }}
+      - run: moon test --target native
+      - run: moon run examples/preference_shift --target native

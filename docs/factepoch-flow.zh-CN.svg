@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">FactEpoch 双时态 Agent 记忆流程</title>
+  <desc id="desc">从 Episode 输入、事件预校验、双时态事实状态到查询与来源解释的流程图</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#263238"/>
+    </marker>
+    <style>
+      .title{font:700 28px 'Noto Serif SC','Songti SC','SimSun',serif;fill:#172126}
+      .sub{font:400 15px 'Noto Serif SC','Songti SC','SimSun',serif;fill:#4a555b}
+      .box{fill:#fff;stroke:#263238;stroke-width:2}
+      .soft{fill:#f5f8f7;stroke:#263238;stroke-width:2}
+      .accent{fill:#eef8f5;stroke:#16836f;stroke-width:2.4}
+      .label{font:600 18px 'Noto Serif SC','Songti SC','SimSun',serif;fill:#172126;text-anchor:middle}
+      .small{font:400 14px 'Noto Serif SC','Songti SC','SimSun',serif;fill:#344047;text-anchor:middle}
+      .edge{fill:none;stroke:#263238;stroke-width:2;marker-end:url(#arrow)}
+      .dash{fill:none;stroke:#526068;stroke-width:2;stroke-dasharray:8 7}
+    </style>
+  </defs>
+  <rect width="1120" height="720" fill="#ffffff"/>
+  <text x="560" y="48" class="title" text-anchor="middle">FactEpoch：双时态 Agent 记忆内核</text>
+  <text x="560" y="76" class="sub" text-anchor="middle">现实有效时间与系统认知时间分离，历史事实不被晚到信息覆盖</text>
+
+  <rect x="54" y="124" width="190" height="70" rx="2" class="box"/>
+  <text x="149" y="153" class="label">原始 Episode</text>
+  <text x="149" y="178" class="small">正文 · 来源 · group</text>
+  <path d="M244 159 H310" class="edge"/>
+  <rect x="310" y="124" width="190" height="70" rx="2" class="box"/>
+  <text x="405" y="153" class="label">候选事实</text>
+  <text x="405" y="178" class="small">subject · predicate · object</text>
+  <path d="M500 159 H566" class="edge"/>
+  <rect x="566" y="124" width="210" height="70" rx="2" class="accent"/>
+  <text x="671" y="153" class="label">事件预校验</text>
+  <text x="671" y="178" class="small">ID · 顺序 · 引用 · 原子批次</text>
+  <path d="M776 159 H842" class="edge"/>
+  <rect x="842" y="124" width="224" height="70" rx="2" class="box"/>
+  <text x="954" y="153" class="label">可重放事件流</text>
+  <text x="954" y="178" class="small">recorded_at + 显式动作</text>
+
+  <rect x="86" y="242" width="948" height="270" rx="8" class="dash"/>
+  <text x="112" y="273" class="sub">双时态事实状态</text>
+  <rect x="130" y="305" width="360" height="72" rx="2" class="soft"/>
+  <text x="310" y="335" class="label">现实有效时间轴</text>
+  <text x="310" y="360" class="small">[valid_from, valid_to) · valid_at</text>
+  <rect x="630" y="305" width="360" height="72" rx="2" class="soft"/>
+  <text x="810" y="335" class="label">系统认知时间轴</text>
+  <text x="810" y="360" class="small">recorded_at ≤ known_at 的事件前缀</text>
+  <path d="M490 341 H630" class="edge"/>
+  <text x="560" y="327" class="small">交叉投影</text>
+
+  <rect x="176" y="418" width="250" height="58" rx="2" class="box"/>
+  <text x="301" y="444" class="label">显式替代 / 撤回</text>
+  <text x="301" y="465" class="small">旧 Fact ID 不可省略</text>
+  <rect x="694" y="418" width="250" height="58" rx="2" class="box"/>
+  <text x="819" y="444" class="label">Episode 来源链</text>
+  <text x="819" y="465" class="small">回答“为什么知道”</text>
+
+  <path d="M560 512 V566" class="edge"/>
+  <rect x="264" y="566" width="592" height="68" rx="2" class="accent"/>
+  <text x="560" y="594" class="label">查询：valid_at × known_at</text>
+  <text x="560" y="620" class="small">事件前缀 replay → 半开区间过滤 → 稳定排序</text>
+  <path d="M560 634 V671" class="edge"/>
+  <text x="560" y="704" class="label">事实版本 · 历史结果 · 来源解释</text>
+</svg>

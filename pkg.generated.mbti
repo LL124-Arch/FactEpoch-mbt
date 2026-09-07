@@ -1,0 +1,176 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "LL124-Arch/factepoch"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub(all) suberror MemoryError {
+  InvalidId(String)
+  InvalidField(String)
+  InvalidInterval(Timestamp, Timestamp)
+  InvalidSequence(Int64)
+  EventConflict(EventId)
+  StreamConflict(String, String)
+  SequenceRegression(Int64, Int64)
+  RecordedTimeRegression(Timestamp, Timestamp)
+  DomainConflict(String)
+  MissingEpisode(EpisodeId)
+  MissingEntity(EntityId)
+  MissingFact(FactId)
+  GroupConflict(String)
+  FactAlreadyClosed(FactId)
+  SupersedeMismatch(FactId)
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub struct ApplyReport {
+  // private fields
+}
+pub fn ApplyReport::accepted(Self) -> Array[EventId]
+pub fn ApplyReport::idempotent(Self) -> Array[EventId]
+
+pub(all) enum CloseReason {
+  ReplacedBy(FactId)
+  Retracted(String)
+} derive(Eq, @debug.Debug)
+
+pub struct Entity {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn Entity::group_id(Self) -> GroupId
+pub fn Entity::id(Self) -> EntityId
+pub fn Entity::name(Self) -> String
+pub fn Entity::new(EntityId, GroupId, String) -> Self raise MemoryError
+
+pub struct EntityId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EntityId::new(String) -> Self raise MemoryError
+pub fn EntityId::value(Self) -> String
+
+pub struct Episode {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn Episode::group_id(Self) -> GroupId
+pub fn Episode::id(Self) -> EpisodeId
+pub fn Episode::new(EpisodeId, GroupId, String, source? : String) -> Self raise MemoryError
+pub fn Episode::source(Self) -> String?
+pub fn Episode::text(Self) -> String
+
+pub struct EpisodeId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EpisodeId::new(String) -> Self raise MemoryError
+pub fn EpisodeId::value(Self) -> String
+
+pub struct EventId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn EventId::new(String) -> Self raise MemoryError
+pub fn EventId::value(Self) -> String
+
+pub struct Explanation {
+  // private fields
+} derive(Eq)
+pub fn Explanation::assertion_event(Self) -> EventId
+pub fn Explanation::closing_event(Self) -> EventId?
+pub fn Explanation::source(Self) -> Episode
+pub fn Explanation::view(Self) -> FactView
+
+pub struct Fact {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn Fact::confidence(Self) -> Int
+pub fn Fact::group_id(Self) -> GroupId
+pub fn Fact::id(Self) -> FactId
+pub fn Fact::new(FactId, GroupId, EntityId, String, FactObject, String, Timestamp, valid_to? : Timestamp, EpisodeId, confidence? : Int) -> Self raise MemoryError
+pub fn Fact::object(Self) -> FactObject
+pub fn Fact::predicate(Self) -> String
+pub fn Fact::source_episode(Self) -> EpisodeId
+pub fn Fact::statement(Self) -> String
+pub fn Fact::subject(Self) -> EntityId
+pub fn Fact::valid_from(Self) -> Timestamp
+pub fn Fact::valid_to(Self) -> Timestamp?
+
+pub struct FactId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn FactId::new(String) -> Self raise MemoryError
+pub fn FactId::value(Self) -> String
+
+pub(all) enum FactObject {
+  EntityRef(EntityId)
+  Literal(String)
+} derive(Compare, Eq, @debug.Debug)
+
+pub struct FactQuery {
+  // private fields
+}
+pub fn FactQuery::new(Timestamp, Timestamp, GroupId, EntityId, String) -> Self raise MemoryError
+
+pub struct FactView {
+  // private fields
+} derive(Eq)
+pub fn FactView::asserted_at(Self) -> Timestamp
+pub fn FactView::close_reason(Self) -> CloseReason?
+pub fn FactView::effective_valid_to(Self) -> Timestamp?
+pub fn FactView::fact(Self) -> Fact
+
+pub struct GroupId {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn GroupId::new(String) -> Self raise MemoryError
+pub fn GroupId::value(Self) -> String
+
+pub(all) enum MemoryEvent {
+  RecordEpisode(Episode)
+  PutEntity(Entity)
+  AssertFact(Fact)
+  SupersedeFact(Fact, Array[FactId])
+  RetractFact(FactId, Timestamp, String)
+} derive(Eq, @debug.Debug)
+
+pub struct MemoryGraph {
+  // private fields
+}
+pub fn MemoryGraph::apply(Self, Array[RecordedEvent]) -> Result[ApplyReport, MemoryError]
+pub fn MemoryGraph::event_count(Self) -> Int
+pub fn MemoryGraph::explain(Self, FactId, Timestamp) -> Result[Explanation, MemoryError]
+pub fn MemoryGraph::history(Self, GroupId, EntityId, String, Timestamp) -> Result[Array[FactView], MemoryError]
+pub fn MemoryGraph::new() -> Self
+pub fn MemoryGraph::query(Self, FactQuery) -> Result[Array[FactView], MemoryError]
+pub fn MemoryGraph::replay(Array[RecordedEvent]) -> Result[Self, MemoryError]
+pub fn MemoryGraph::snapshot_events(Self) -> Array[RecordedEvent]
+
+pub struct RecordedEvent {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn RecordedEvent::event_id(Self) -> EventId
+pub fn RecordedEvent::new(String, Int64, EventId, Timestamp, MemoryEvent) -> Self raise MemoryError
+pub fn RecordedEvent::recorded_at(Self) -> Timestamp
+pub fn RecordedEvent::seq(Self) -> Int64
+pub fn RecordedEvent::stream_id(Self) -> String
+
+type StoredFact derive(Eq)
+
+pub struct Timestamp {
+  // private fields
+} derive(Compare, Eq, Hash, @debug.Debug)
+pub fn Timestamp::from_unix_millis(Int64) -> Self
+pub fn Timestamp::to_unix_millis(Self) -> Int64
+
+pub struct ValidInterval {
+  // private fields
+} derive(Eq, @debug.Debug)
+pub fn ValidInterval::contains(Self, Timestamp) -> Bool
+pub fn ValidInterval::from(Self) -> Timestamp
+pub fn ValidInterval::new(Timestamp, Timestamp?) -> Self raise MemoryError
+pub fn ValidInterval::to(Self) -> Timestamp?
+
+// Type aliases
+
+// Traits

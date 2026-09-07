@@ -1,0 +1,10 @@
+FactEpoch-mbt
+Copyright 2026 LL124-Arch
+
+Licensed under the Apache License, Version 2.0.
+
+The bitemporal fact-model design references Graphiti 0.30.1 at commit
+547422865cca9fb5a82915c074d899428c145ff4.
+Graphiti copyright 2024, Zep Software, Inc.
+
+See THIRD_PARTY.md. Reference does not imply affiliation or endorsement.
